@@ -16,6 +16,8 @@
     This example retrieves the object ID, object type, and display name for the Azure AD user with the user principal name "johndoe@contoso.com".
 
 .NOTES
+    Requires an active connection to Azure AD using Connect-AzureAD.
+
     Author: Stephen Carroll - Microsoft
     Date:   2021-08-31
 #>
@@ -102,6 +104,7 @@ function Get-AADObjectId
     }
     return $object
 }
+
 <#
 .SYNOPSIS
     Gets the subscription ID and tenant ID for the specified Azure subscription.
@@ -112,12 +115,11 @@ function Get-AADObjectId
 .EXAMPLE
     get-AzureSubscriptionInfo -SubscriptionName 'MySubscription'
 .NOTES
-    requires an active connection to Azure using Connect-AzAccount
+    Requires an active connection to Azure using Connect-AzAccount
 
     Author: Stephen Carroll - Microsoft
     Date:   2021-08-31
 #>
-
 function get-AzureSubscriptionInfo
 {
     param (
@@ -155,7 +157,6 @@ function get-AzureSubscriptionInfo
 
     return $object
 }
-
 <#
 .SYNOPSIS
     Creates a folder in a Data Lake Storage account.
@@ -640,6 +641,44 @@ function set-DataLakeFolderACL
 
 }
 
+
+<#
+.SYNOPSIS
+    Gets the Access Control List (ACL) for a folder in Azure Data Lake Storage Gen2.
+
+.DESCRIPTION
+    This function gets the Access Control List (ACL) for a folder in Azure Data Lake Storage Gen2.
+    It requires the following parameters:
+    - SubscriptionName: The name of the Azure subscription.
+    - ResourceGroupName: The name of the resource group containing the storage account.
+    - StorageAccountName: The name of the storage account.
+    - ContainerName: The name of the container.
+    - FolderPath: The path of the folder.
+
+.PARAMETER SubscriptionName
+    The name of the Azure subscription.
+
+.PARAMETER ResourceGroupName
+    The name of the resource group containing the storage account.
+
+.PARAMETER StorageAccountName
+    The name of the storage account.
+
+.PARAMETER ContainerName
+    The name of the container.
+
+.PARAMETER FolderPath
+    The path of the folder.
+
+.EXAMPLE
+    PS C:\> get-DataLakeFolderACL -SubscriptionName "MySubscription" -ResourceGroupName "MyResourceGroup" -StorageAccountName "MyStorageAccount" -ContainerName "MyContainer" -FolderPath "/MyFolder"
+
+    This example gets the ACL for the folder "/MyFolder" in the container "MyContainer" of the storage account "MyStorageAccount" in the resource group "MyResourceGroup" of the Azure subscription "MySubscription".
+
+.NOTES
+    Author: Unknown
+    Last Edit: Unknown
+#>
 function get-DataLakeFolderACL
 {
     [CmdletBinding()]
