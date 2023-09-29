@@ -772,24 +772,24 @@ function get-DataLakeFolderACL
 
 
     # get the ACL for the folder
-        $acls = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath | Select-Object -ExpandProperty ACL
-        $aclResults = New-Object System.Collections.Generic.List[System.Object]
-        foreach ( $ace in $acls)
+    $acls = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath | Select-Object -ExpandProperty ACL
+    $aclResults = New-Object System.Collections.Generic.List[System.Object]
+    foreach ( $ace in $acls)
+    {
+        if ($null -ne $ace.EntityId)
         {
-            if ($null -ne $ace.EntityId)
-            {
-    #            Write-Host '--------------------'
-                $adObject = Get-AzureADObjectByObjectId -ObjectIds $ace.EntityId
-                $aclResults.Add([pscustomobject]@{
-                    DisplayName = $adObject.DisplayName
-                    ObjectId = $ace.EntityId
-                    ObjectType = $adObject.ObjectType
-                    Permissions = $ace.Permissions
+            #            Write-Host '--------------------'
+            $adObject = Get-AzureADObjectByObjectId -ObjectIds $ace.EntityId
+            $aclResults.Add([pscustomobject]@{
+                    DisplayName  = $adObject.DisplayName
+                    ObjectId     = $ace.EntityId
+                    ObjectType   = $adObject.ObjectType
+                    Permissions  = $ace.Permissions
                     DefaultScope = $ace.DefaultScope
                 })
-            }
         }
-        return $aclResults
+    }
+    return $aclResults
 }
 
 
