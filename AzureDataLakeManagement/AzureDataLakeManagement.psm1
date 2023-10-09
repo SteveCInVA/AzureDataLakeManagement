@@ -903,7 +903,7 @@ function move-DataLakeFolder
     # verify the source folder exists before moving
     try
     {
-        $folderExists = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $SourceFolderPath
+        $folderExists = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $SourceContainerName -Path $SourceFolderPath
         if ($null -eq $folderExists)
         {
             Write-Error('Source folder not found.')
@@ -921,8 +921,7 @@ function move-DataLakeFolder
         $DestinationContainerName = $SourceContainerName
     }
 
-    Move-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $SourceFolderPath -DestFileSystem $DestinationContainerName -DestPath $DestinationFolderPath -Force
-
+    Move-AzDataLakeGen2Item -Context $ctx -FileSystem $SourceContainerName -Path $SourceFolderPath -DestFileSystem $DestinationContainerName -DestPath $DestinationFolderPath -Force
 
 }
 
