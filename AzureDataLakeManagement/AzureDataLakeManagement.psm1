@@ -419,6 +419,7 @@ The function requires the following parameters:
 - FolderPath: The path of the folder.
 - Identity: The identity to use in the ACL.
 - AccessControlType: The type of access control to apply to the folder. Valid values are 'Read' and 'Write'.
+- SetContainerACL:  A switch parameter that specifies whether to set the ACL for the container.
 - IncludeDefaultScope: A switch parameter that specifies whether to include the default scope in the ACL.
 
 .PARAMETER SubscriptionName
@@ -442,6 +443,9 @@ The identity to use in the ACL.
 .PARAMETER AccessControlType
 The type of access control to apply to the folder. Valid values are 'Read' and 'Write'.
 
+.PARAMETER SetContainerACL
+A switch parameter that specifies whether to set the the specified identity on the root of the specified container.
+
 .PARAMETER IncludeDefaultScope
 A switch parameter that specifies whether to include the default scope in the ACL.
 
@@ -452,6 +456,7 @@ This example sets the ACL for the folder "/MyFolder" in the container "MyContain
 
 .NOTES
 Requires the Az.Storage module.
+Note:  setting the setContainerACL will enable place the requested identity at the root of the container with read-execute permissions.  A default will not be set at this level.
 #>
 function set-DataLakeFolderACL
 {
@@ -478,6 +483,8 @@ function set-DataLakeFolderACL
         [ValidateSet('Read', 'Write')]
         [Parameter(Mandatory = $true)]
         [string]$AccessControlType,
+
+        [switch]$SetContainerACL,
 
         [switch]$IncludeDefaultScope
     )
@@ -559,9 +566,6 @@ function set-DataLakeFolderACL
         return
     }
 
-    # get the ACL for the folder
-    $acl = (Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath).ACL
-
     # translate the access control type to applied permission
     $permission = switch ( $AccessControlType )
     { 'Read'
@@ -592,6 +596,31 @@ function set-DataLakeFolderACL
         { ''
         }
     }
+
+    # set the ACL at the container level
+    if ($SetContainerACL)
+    {
+        Write-Verbose 'set container ACL'
+        $containerACL = (Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName).ACL
+        $containerACL = Set-AzDataLakeGen2ItemAclObject -AccessControlType $identityType -EntityId $identityObj.ObjectId -Permission 'r-x' -InputObject $containerACL
+        $result = Update-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Acl $containerACL
+
+        if ($result.FailedEntries.Count -gt 0)
+        {
+            Write-Error 'Failed to set the ACL for the container.'
+            Write-Error $result.FailedEntries
+            return
+        }
+        else
+        {
+            Write-Host 'Container ACL set successfully.'
+            Write-Verbose ('Successful Directories: {0} ' -f $result.TotalDirectoriesSuccessfulCount)
+            Write-Verbose ('Successful Files: {0} ' -f $result.TotalFilesSuccessfulCount)
+        }
+    }
+
+    # get the ACL for the folder
+    $acl = (Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath).ACL
 
     try
     {
@@ -640,7 +669,6 @@ function set-DataLakeFolderACL
 
 
 }
-
 
 <#
 .SYNOPSIS
