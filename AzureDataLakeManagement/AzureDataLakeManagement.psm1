@@ -819,6 +819,43 @@ function get-DataLakeFolderACL
     return $aclResults
 }
 
+<#
+.SYNOPSIS
+Moves a folder in Azure Data Lake Storage Gen2 to a new location.
+
+.DESCRIPTION
+The move-DataLakeFolder function moves a folder in Azure Data Lake Storage Gen2 to a new location.
+
+.PARAMETER SubscriptionName
+The name of the Azure subscription containing the Data Lake Storage Gen2 account.
+
+.PARAMETER ResourceGroupName
+The name of the Resource Group containint the Data Lake Storage Gen2 account.
+
+.PARAMETER StorageAccountName
+The name of the Data Lake Storage Gen2 account.
+
+.PARAMETER SourceContainerName
+The name of the source container for the copy operation.
+
+.PARAMETER SourceFolderPath
+The name of the folder to copy.
+
+.PARAMETER DestinationContainerName
+[Optional] - If not specified will default to the SourceContainerName.
+The name of the destination container for the copy operation.
+
+.PARAMETER destinationFolderPath
+The name of the destination folder
+
+.EXAMPLE
+PS C:\> move-datalakefolder -subscriptionName 'subscriptionName' -resourcegroupname 'sourceResourceGroup' -storageAccountName 'mydatalake' -SourceContainerName 'container1' -SourceFolderPath '/source/folder/path' -destinationFolderPath '/destination/folder/path'
+
+Moves the folder at "/source/folder/path" to "/destination/folder/path" in the "mydatalake" Data Lake Storage Gen1 account, which is located in the "sourceResourceGroup" resource group. The destination account is located in the "destinationResourceGroup" resource group.
+
+.NOTES
+This function requires the AzureRM.DataLakeStore PowerShell module to be installed.
+#>
 function move-DataLakeFolder
 {
     [CmdletBinding()]
@@ -921,7 +958,19 @@ function move-DataLakeFolder
         $DestinationContainerName = $SourceContainerName
     }
 
-    Move-AzDataLakeGen2Item -Context $ctx -FileSystem $SourceContainerName -Path $SourceFolderPath -DestFileSystem $DestinationContainerName -DestPath $DestinationFolderPath -Force
+    $ret = Move-AzDataLakeGen2Item -Context $ctx -FileSystem $SourceContainerName -Path $SourceFolderPath -DestFileSystem $DestinationContainerName -DestPath $DestinationFolderPath -Force
+
+    if ($null -eq $ret)
+    {
+        Write-Error 'Failed to move folder.'
+        return
+    }
+    else
+    {
+        Write-Verbose ('Function: move-DataLakeFolder')
+        Write-Verbose "Folder moved: $DestinationFolderPath"
+        return $ret
+    }
 
 }
 
