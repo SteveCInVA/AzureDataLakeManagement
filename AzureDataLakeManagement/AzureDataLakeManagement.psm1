@@ -798,7 +798,6 @@ function get-DataLakeFolderACL
         return
     }
 
-
     # get the ACL for the folder
     $acls = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath | Select-Object -ExpandProperty ACL
     $aclResults = New-Object System.Collections.Generic.List[System.Object]
@@ -820,5 +819,111 @@ function get-DataLakeFolderACL
     return $aclResults
 }
 
+function move-DataLakeFolder
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$SubscriptionName,
+
+        [Parameter(Mandatory = $true)]
+        [string]$ResourceGroupName,
+
+        [Parameter(Mandatory = $true)]
+        [string]$StorageAccountName,
+
+        [Parameter(Mandatory = $true)]
+        [string]$SourceContainerName,
+
+        [Parameter(Mandatory = $true)]
+        [string]$SourceFolderPath,
+
+        [Parameter(Mandatory = $false)]
+        [string]$DestinationContainerName,
+
+        [Parameter(Mandatory = $true)]
+        [string]$DestinationFolderPath
+    )
+
+    if (-not (Get-Module -Name Az.Storage -ListAvailable))
+    {
+        Write-Verbose 'Installing Az.Storage module.'
+        Import-Module -Name Az.Storage
+    }
+
+    if (-not (Get-Module -Name AzureAD -ListAvailable))
+    {
+        Write-Verbose 'Installing Az.Storage module.'
+        Import-Module -Name AzureAd
+    }
+
+    $sub = get-AzureSubscriptionInfo -SubscriptionName $SubscriptionName
+    if ($null -eq $sub)
+    {
+        Write-Error 'Subscription not found. Ensure you have run Connect-AzAccount before execution.'
+        return
+    }
+    else
+    {
+        $subId = $sub.SubscriptionId
+    }
+
+    # Set the current Azure context
+    $subContext = Set-AzContext -Subscription $subId
+    if ($null -eq $subContext)
+    {
+        Write-Error 'Failed to set the Azure context.'
+        return
+    }
+    else
+    {
+        Write-Verbose $subContext.Name
+    }
+
+    # Get the Data Lake Storage account
+    $storageAccount = Get-AzStorageAccount -Name $StorageAccountName -ResourceGroup $ResourceGroupName
+    if ($null -eq $storageAccount)
+    {
+        Write-Error 'Storage account not found.'
+        return
+    }
+    else
+    {
+        Write-Verbose $storageAccount.StorageAccountName
+    }
+
+    # Set the context to the Data Lake Storage account
+    $ctx = $storageAccount.Context
+    if ($null -eq $ctx)
+    {
+        Write-Error 'Failed to set the Data Lake Storage account context.'
+        return
+    }
+
+    # verify the source folder exists before moving
+    try
+    {
+        $folderExists = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $SourceFolderPath
+        if ($null -eq $folderExists)
+        {
+            Write-Error('Source folder not found.')
+            return
+        }
+    }
+    catch
+    {
+        Write-Error('Source folder not found.')
+        return
+    }
+
+    if(-not $DestinationContainerName)
+    {
+        $DestinationContainerName = $SourceContainerName
+    }
+
+    Move-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $SourceFolderPath -DestFileSystem $DestinationContainerName -DestPath $DestinationFolderPath -Force
+
+
+}
 
 Export-ModuleMember -Function *
