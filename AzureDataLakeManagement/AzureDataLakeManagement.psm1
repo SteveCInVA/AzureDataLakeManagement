@@ -989,4 +989,9 @@ function move-DataLakeFolder
 
 }
 
+function remove-DataLakeFolderACL
+{
+    #todo
+}
+
 Export-ModuleMember -Function *
