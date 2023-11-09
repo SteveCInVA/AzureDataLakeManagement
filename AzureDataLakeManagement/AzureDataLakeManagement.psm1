@@ -681,7 +681,7 @@ function set-DataLakeFolderACL
     - ResourceGroupName: The name of the resource group containing the storage account.
     - StorageAccountName: The name of the storage account.
     - ContainerName: The name of the container.
-    - FolderPath: The path of the folder.
+    - FolderPath: The path of the folder. (Optional:  If omitted, will revert to the root of the container.)
 
 .PARAMETER SubscriptionName
     The name of the Azure subscription.
@@ -696,7 +696,7 @@ function set-DataLakeFolderACL
     The name of the container.
 
 .PARAMETER FolderPath
-    The path of the folder.
+    The path of the folder. (Optional:  If omitted, will revert to the root of the container.)
 
 .EXAMPLE
     PS C:\> get-DataLakeFolderACL -SubscriptionName "MySubscription" -ResourceGroupName "MyResourceGroup" -StorageAccountName "MyStorageAccount" -ContainerName "MyContainer" -FolderPath "/MyFolder"
@@ -723,7 +723,7 @@ function get-DataLakeFolderACL
         [Parameter(Mandatory = $true)]
         [string]$ContainerName,
 
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $false)]
         [string]$FolderPath
     )
 
@@ -737,6 +737,21 @@ function get-DataLakeFolderACL
     {
         Write-Verbose 'Installing Az.Storage module.'
         Import-Module -Name AzureAd
+    }
+
+    #check if the $folderpath is null, and if so set it to '/'
+    if (-not $FolderPath)
+    {
+        $FolderPath = '/'
+    }
+
+    #check if the $folderpath is greater than 1 character, and if so check that it doesn't start with a '/' or a '\'
+    if ($FolderPath.Length -gt 1)
+    {
+        if ($FolderPath.StartsWith('/') -or $FolderPath.StartsWith('\'))
+        {
+            $FolderPath = $FolderPath.Substring(1)
+        }
     }
 
     $sub = get-AzureSubscriptionInfo -SubscriptionName $SubscriptionName
