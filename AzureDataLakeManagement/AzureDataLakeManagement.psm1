@@ -1113,21 +1113,23 @@ function remove-DataLakeFolderACL
     if ($folderExists.IsDirectory)
     {
         $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType User -Permission 'rwx' -DefaultScope
-        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Group -Permission 'rwx' -InputObject $aclnew -DefaultScope
+        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Group -Permission 'r-x' -InputObject $aclnew -DefaultScope
         $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Mask -Permission 'rwx' -InputObject $aclnew -DefaultScope
         $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Other -Permission '---' -InputObject $aclnew -DefaultScope
     }
     else
     {
         $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType User -Permission 'rwx'
-        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Group -Permission 'rwx' -InputObject $aclnew
+        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Group -Permission 'r-x' -InputObject $aclnew
         $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Mask -Permission 'rwx' -InputObject $aclnew
         $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Other -Permission '---' -InputObject $aclnew
     }
 
     # set existing ACL's to review for existing permission to remove
     $acls = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath | Select-Object -ExpandProperty ACL
+    $acls2 = $acls
 
+    $i = 0
     foreach ($a in $acls)
     {
         if (!($a.AccessControlType -eq $identityObj.ObjectType -and $a.EntityId -eq $id) -and $null -ne $a.EntityId)
@@ -1173,15 +1175,23 @@ function remove-DataLakeFolderACL
                 $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType $a.AccessControlType -EntityId $a.EntityId -Permission $permission -InputObject $aclnew
             }
         }
+        else
+        {
+            write-verbose "skipping $a.AccessControlType $a.EntityId"
+            if ($null -ne $a.EntityId)
+            {
+            $acls2 = $acls2 | Where-Object { $_ -ne $acls2[$i] }
+            }
+        }
+        $i++
     }
-
-    write-verbose $aclnew
 
     try
     {
-        $result = Set-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $aclnew
+        $result = Set-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $acls2 -ErrorAction Stop
+        #$result = Set-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $aclnew -ErrorAction Stop
     }
-    catch [Azure.RequestFailedException]
+    catch
     {
         if ($_.Exception.Status -eq 403 -and $_.Exception.ErrorCode -eq 'SetAclMissingAces')
         {
