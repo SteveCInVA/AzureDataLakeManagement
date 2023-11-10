@@ -1083,14 +1083,47 @@ function remove-DataLakeFolderACL
         return
     }
 
-    
+    # Get the object ID of the identity to use in the ACL
+    $identityObj = Get-AADObjectId -Identity $Identity
+    if ($null -eq $identityObj)
+    {
+        Write-Error 'Identity not found.'
+        return
+    }
+    else
+    {
+        Write-Verbose ('{0} ID: {1} Display Name: {2}' -f $identityObj.ObjectType, $identityObj.ObjectId, $identityObj.DisplayName)
+    }
 
+    $id = $identityObj.ObjectId
 
-    #todo: implement acl update
-    #$acl = Set-AzDataLakeGen2ItemAclObject -AccessControlType user -EntityId $id -Permission r-x -DefaultScope
-    #$result = Remove-AzDataLakeGen2AclRecursive -FileSystem "filesystem1" -Path "dir1" -Acl $acl  -Context $ctx
+    # Create the new ACL object.
+    $acls = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath | Select-Object -ExpandProperty ACL
+    #add error check if no acl found
 
+    $aclnew = [System.Collections.Generic.List[System.Object]]::new()
 
+    foreach ($a in $acls)
+    {
+        if (!($a.AccessControlType -eq $identityObj.ObjectType -and $a.EntityId -eq $id))
+        {
+            $aclnew.Add($a);
+        }
+    }
+
+    $result = Update-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $aclnew
+    if ($result.FailedEntries.Count -gt 0)
+    {
+        Write-Error 'Failed to update the ACL.'
+        Write-Error $result.FailedEntries
+        return
+    }
+    else
+    {
+        Write-Host 'ACL updated successfully.'
+        Write-Verbose ('Successful Directories: {0} ' -f $result.TotalDirectoriesSuccessfulCount)
+        Write-Verbose ('Successful Files: {0} ' -f $result.TotalFilesSuccessfulCount)
+    }
 }
 
 Export-ModuleMember -Function *
