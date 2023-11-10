@@ -968,7 +968,7 @@ function move-DataLakeFolder
         return
     }
 
-    if(-not $DestinationContainerName)
+    if (-not $DestinationContainerName)
     {
         $DestinationContainerName = $SourceContainerName
     }
@@ -1112,17 +1112,17 @@ function remove-DataLakeFolderACL
     $aclnew = [System.Collections.Generic.List[System.Object]]::new()
     if ($folderExists.IsDirectory)
     {
-        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType User -Permission "rwx" -DefaultScope
-        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Group -Permission "rwx" -InputObject $aclnew -DefaultScope
-        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Mask -Permission "rwx" -InputObject $aclnew -DefaultScope
-        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Other -Permission "---" -InputObject $aclnew -DefaultScope
+        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType User -Permission 'rwx' -DefaultScope
+        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Group -Permission 'rwx' -InputObject $aclnew -DefaultScope
+        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Mask -Permission 'rwx' -InputObject $aclnew -DefaultScope
+        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Other -Permission '---' -InputObject $aclnew -DefaultScope
     }
     else
     {
-        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType User -Permission "rwx"
-        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Group -Permission "rwx" -InputObject $aclnew
-        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Mask -Permission "rwx" -InputObject $aclnew
-        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Other -Permission "---" -InputObject $aclnew
+        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType User -Permission 'rwx'
+        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Group -Permission 'rwx' -InputObject $aclnew
+        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Mask -Permission 'rwx' -InputObject $aclnew
+        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Other -Permission '---' -InputObject $aclnew
     }
 
     # set existing ACL's to review for existing permission to remove
@@ -1130,9 +1130,9 @@ function remove-DataLakeFolderACL
 
     foreach ($a in $acls)
     {
-        if (!($a.AccessControlType -eq $identityObj.ObjectType -and $a.EntityId -eq $id) -and  $null -ne $a.EntityId)
+        if (!($a.AccessControlType -eq $identityObj.ObjectType -and $a.EntityId -eq $id) -and $null -ne $a.EntityId)
         {
-            switch($a.permissions)
+            switch ($a.permissions)
             {
                 'execute, write, read'
                 {
@@ -1164,7 +1164,6 @@ function remove-DataLakeFolderACL
                 }
             }
 
-
             if ($a.DefaultScope)
             {
                 $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType $a.AccessControlType -EntityId $a.EntityId -Permission $permission -DefaultScope -InputObject $aclnew
@@ -1176,16 +1175,20 @@ function remove-DataLakeFolderACL
         }
     }
 
-    write-output $aclnew
+    write-verbose $aclnew
 
-    try {
+    try
+    {
         $result = Set-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $aclnew
     }
-    catch [Azure.RequestFailedException] {
-        if ($_.Exception.Status -eq 403 -and $_.Exception.ErrorCode -eq 'SetAclMissingAces') {
-            Write-Error "Failed to set ACL due to missing ACEs. Please check your permissions and ACL entries."
+    catch [Azure.RequestFailedException]
+    {
+        if ($_.Exception.Status -eq 403 -and $_.Exception.ErrorCode -eq 'SetAclMissingAces')
+        {
+            Write-Error 'Failed to set ACL due to missing ACEs. Please check your permissions and ACL entries.'
         }
-        else {
+        else
+        {
             throw $_
         }
     }
