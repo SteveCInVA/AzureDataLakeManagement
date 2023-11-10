@@ -2,5 +2,7 @@
     "cSpell.words": [
         "pscustomobject"
     ],
-    "githubPullRequests.remotes": []
+    "githubPullRequests.remotes": [
+        "https://github.com/SteveCInVA/Powershell.git"
+    ]
 }
