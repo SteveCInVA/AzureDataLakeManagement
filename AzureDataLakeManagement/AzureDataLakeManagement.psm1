@@ -1009,10 +1009,7 @@ function remove-DataLakeFolderACL
         [string]$FolderPath,
 
         [Parameter(Mandatory = $true)]
-        [string]$Identity,
-
-        [Parameter(Mandatory = $false)]
-        [boolean]$Recursive #if missing or true will update current folder and all children
+        [string]$Identity
     )
 
     #verify parameters
@@ -1068,6 +1065,7 @@ function remove-DataLakeFolderACL
 
     # Get the Data Lake Storage account
     $storageAccount = Get-AzStorageAccount -Name $StorageAccountName -ResourceGroup $ResourceGroupName
+
     if ($null -eq $storageAccount)
     {
         Write-Error 'Storage account not found.'
@@ -1100,27 +1098,96 @@ function remove-DataLakeFolderACL
 
     $id = $identityObj.ObjectId
 
-    # Create the new ACL object.
-    $acls = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath | Select-Object -ExpandProperty ACL
-    #add error check if no acl found
+    try
+    {
+        $folderExists = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath -ErrorAction Stop
+    }
+    catch
+    {
+        Write-Error "Object '$FolderPath' does not exist."
+        return
+    }
 
+    #prepopulate with owner and ownergroup and mask
     $aclnew = [System.Collections.Generic.List[System.Object]]::new()
+    if ($folderExists.IsDirectory)
+    {
+        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType User -Permission "rwx" -DefaultScope
+        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Group -Permission "rwx" -InputObject $aclnew -DefaultScope
+        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Mask -Permission "rwx" -InputObject $aclnew -DefaultScope
+        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Other -Permission "---" -InputObject $aclnew -DefaultScope
+    }
+    else
+    {
+        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType User -Permission "rwx"
+        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Group -Permission "rwx" -InputObject $aclnew
+        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Mask -Permission "rwx" -InputObject $aclnew
+        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Other -Permission "---" -InputObject $aclnew
+    }
+
+    # set existing ACL's to review for existing permission to remove
+    $acls = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath | Select-Object -ExpandProperty ACL
 
     foreach ($a in $acls)
     {
-        if (!($a.AccessControlType -eq $identityObj.ObjectType -and $a.EntityId -eq $id))
+        if (!($a.AccessControlType -eq $identityObj.ObjectType -and $a.EntityId -eq $id) -and  $null -ne $a.EntityId)
         {
-            $aclnew.Add($a);
+            switch($a.permissions)
+            {
+                'execute, write, read'
+                {
+                    $permission = 'rwx'
+                }
+                'execute, write'
+                {
+                    $permission = '-wx'
+                }
+                'execute, read'
+                {
+                    $permission = 'r-x'
+                }
+                'write, read'
+                {
+                    $permission = 'rw-'
+                }
+                'read'
+                {
+                    $permission = 'r--'
+                }
+                'write'
+                {
+                    $permission = '-w-'
+                }
+                'execute'
+                {
+                    $permission = '--x'
+                }
+            }
+
+
+            if ($a.DefaultScope)
+            {
+                $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType $a.AccessControlType -EntityId $a.EntityId -Permission $permission -DefaultScope -InputObject $aclnew
+            }
+            else
+            {
+                $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType $a.AccessControlType -EntityId $a.EntityId -Permission $permission -InputObject $aclnew
+            }
         }
     }
 
-    # if recursive, remove the acl from all folders and files else just remove from present layer
-    if ($null -eq $Recursive -or $Recursive -eq $true)
-    {
-        $result = Update-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $aclnew
+    write-output $aclnew
+
+    try {
+        $result = Set-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $aclnew
     }
-    else {
-        $result = Update-AzDataLakeGen2Acl -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $aclnew
+    catch [Azure.RequestFailedException] {
+        if ($_.Exception.Status -eq 403 -and $_.Exception.ErrorCode -eq 'SetAclMissingAces') {
+            Write-Error "Failed to set ACL due to missing ACEs. Please check your permissions and ACL entries."
+        }
+        else {
+            throw $_
+        }
     }
 
     if ($result.FailedEntries.Count -gt 0)
