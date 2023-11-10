@@ -1009,7 +1009,10 @@ function remove-DataLakeFolderACL
         [string]$FolderPath,
 
         [Parameter(Mandatory = $true)]
-        [string]$Identity
+        [string]$Identity,
+
+        [Parameter(Mandatory = $false)]
+        [boolean]$Recursive #if missing or true will update current folder and all children
     )
 
     #verify parameters
@@ -1111,7 +1114,15 @@ function remove-DataLakeFolderACL
         }
     }
 
-    $result = Update-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $aclnew
+    # if recursive, remove the acl from all folders and files else just remove from present layer
+    if ($null -eq $Recursive -or $Recursive -eq $true)
+    {
+        $result = Update-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $aclnew
+    }
+    else {
+        $result = Update-AzDataLakeGen2Acl -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $aclnew
+    }
+
     if ($result.FailedEntries.Count -gt 0)
     {
         Write-Error 'Failed to update the ACL.'
