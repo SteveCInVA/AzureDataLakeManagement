@@ -602,6 +602,7 @@ function set-DataLakeFolderACL
     {
         Write-Verbose 'set container ACL'
         $containerACL = (Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName).ACL
+        $containerACL = Set-AzDataLakeGen2ItemAclObject -AccessControlType Mask -Permission 'r-x' -InputObject $containerACL
         $containerACL = Set-AzDataLakeGen2ItemAclObject -AccessControlType $identityType -EntityId $identityObj.ObjectId -Permission 'r-x' -InputObject $containerACL
         $result = Update-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Acl $containerACL
 
@@ -624,6 +625,7 @@ function set-DataLakeFolderACL
 
     try
     {
+        $acl = Set-AzDataLakeGen2ItemAclObject -AccessControlType Mask  -Permission "rwx" -InputObject $acl
         $acl = Set-AzDataLakeGen2ItemAclObject -AccessControlType $identityType -EntityId $identityObj.ObjectId -Permission $permission -InputObject $acl
         $result = Update-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $acl
     }
@@ -650,6 +652,7 @@ function set-DataLakeFolderACL
     if ($IncludeDefaultScope)
     {
         Write-Verbose 'include default scope'
+        $acl = Set-AzDataLakeGen2ItemAclObject -AccessControlType Mask  -Permission "rwx" -InputObject $acl -DefaultScope
         $acl = Set-AzDataLakeGen2ItemAclObject -AccessControlType $identityType -EntityId $identityObj.ObjectId -Permission $permission -InputObject $acl -DefaultScope
         $result = Update-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $acl
 
