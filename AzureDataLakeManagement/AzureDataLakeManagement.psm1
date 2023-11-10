@@ -1100,7 +1100,7 @@ function remove-DataLakeFolderACL
 
     try
     {
-        $folderExists = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath -ErrorAction Stop
+        Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath -ErrorAction Stop
     }
     catch
     {
@@ -1108,100 +1108,26 @@ function remove-DataLakeFolderACL
         return
     }
 
-    #prepopulate with owner and ownergroup and mask
-    $aclnew = [System.Collections.Generic.List[System.Object]]::new()
-    if ($folderExists.IsDirectory)
-    {
-        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType User -Permission 'rwx' -DefaultScope
-        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Group -Permission 'r-x' -InputObject $aclnew -DefaultScope
-        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Mask -Permission 'rwx' -InputObject $aclnew -DefaultScope
-        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Other -Permission '---' -InputObject $aclnew -DefaultScope
-    }
-    else
-    {
-        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType User -Permission 'rwx'
-        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Group -Permission 'r-x' -InputObject $aclnew
-        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Mask -Permission 'rwx' -InputObject $aclnew
-        $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType Other -Permission '---' -InputObject $aclnew
-    }
-
     # set existing ACL's to review for existing permission to remove
     $acls = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath | Select-Object -ExpandProperty ACL
-    $acls2 = $acls
+    $newacl = $acls
 
+    #loop through existing ACL's and remove the specified identity
     $i = 0
     foreach ($a in $acls)
     {
-        if (!($a.AccessControlType -eq $identityObj.ObjectType -and $a.EntityId -eq $id) -and $null -ne $a.EntityId)
+        if (($a.AccessControlType -eq $identityObj.ObjectType -and $a.EntityId -eq $id) -and $null -ne $a.EntityId)
         {
-            switch ($a.permissions)
-            {
-                'execute, write, read'
-                {
-                    $permission = 'rwx'
-                }
-                'execute, write'
-                {
-                    $permission = '-wx'
-                }
-                'execute, read'
-                {
-                    $permission = 'r-x'
-                }
-                'write, read'
-                {
-                    $permission = 'rw-'
-                }
-                'read'
-                {
-                    $permission = 'r--'
-                }
-                'write'
-                {
-                    $permission = '-w-'
-                }
-                'execute'
-                {
-                    $permission = '--x'
-                }
-            }
-
-            if ($a.DefaultScope)
-            {
-                $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType $a.AccessControlType -EntityId $a.EntityId -Permission $permission -DefaultScope -InputObject $aclnew
-            }
-            else
-            {
-                $aclnew = Set-AzDataLakeGen2ItemAclObject -AccessControlType $a.AccessControlType -EntityId $a.EntityId -Permission $permission -InputObject $aclnew
-            }
-        }
-        else
-        {
-            write-verbose "skipping $a.AccessControlType $a.EntityId"
             if ($null -ne $a.EntityId)
             {
-            $acls2 = $acls2 | Where-Object { $_ -ne $acls2[$i] }
+                $newacl = $newacl | Where-Object { $_ -ne $newacl[$i] }
             }
         }
         $i++
     }
 
-    try
-    {
-        $result = Set-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $acls2 -ErrorAction Stop
-        #$result = Set-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $aclnew -ErrorAction Stop
-    }
-    catch
-    {
-        if ($_.Exception.Status -eq 403 -and $_.Exception.ErrorCode -eq 'SetAclMissingAces')
-        {
-            Write-Error 'Failed to set ACL due to missing ACEs. Please check your permissions and ACL entries.'
-        }
-        else
-        {
-            throw $_
-        }
-    }
+    #update the acl and all objects underneath
+    $result = Set-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $newacl -ErrorAction Stop
 
     if ($result.FailedEntries.Count -gt 0)
     {
