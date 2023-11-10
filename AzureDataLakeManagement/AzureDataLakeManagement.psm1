@@ -1103,7 +1103,7 @@ function remove-DataLakeFolderACL
 
     try
     {
-        Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath -ErrorAction Stop
+        $folder = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath -ErrorAction Stop
     }
     catch
     {
