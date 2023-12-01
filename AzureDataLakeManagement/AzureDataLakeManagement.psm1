@@ -113,13 +113,18 @@ function Get-AADObjectId
 function get-AzureSubscriptionInfo
 {
     param (
+        # The name of the Azure subscription
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [string]$SubscriptionName
     )
+
     try
     {
+        # Get the subscription details
         $subscription = Get-AzSubscription -SubscriptionName $SubscriptionName
+
+        # Check if the subscription exists
         if ($null -eq $subscription)
         {
             Write-Error('Subscription "{0}" not found.', $SubscriptionName)
@@ -127,19 +132,23 @@ function get-AzureSubscriptionInfo
         }
         else
         {
+            # Write verbose messages for debugging
             Write-Verbose 'Function: get-AzureSubscriptionInfo: Subscription found.'
             Write-Verbose "SubscriptionID: $subscription.id  SubscriptionName: $subscription.Name"
         }
     }
     catch
     {
+        # Handle exceptions and write an error message
         Write-Error 'Ensure you have run Connect-AzAccount and that the subscription exists.'
         return
     }
 
+    # Get the subscription ID and tenant ID
     $subscriptionId = $subscription.SubscriptionId
     $tenantId = $subscription.TenantId
 
+    # Create a custom object to return
     $object = [PSCustomObject]@{
         SubscriptionId = $subscriptionId
         TenantId       = $tenantId
@@ -147,6 +156,7 @@ function get-AzureSubscriptionInfo
 
     return $object
 }
+
 <#
 .SYNOPSIS
     Creates a folder in a Data Lake Storage account.
