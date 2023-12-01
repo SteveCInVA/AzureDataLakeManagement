@@ -179,32 +179,29 @@ function add-DataLakeFolder
 {
     param(
         [Parameter(Mandatory = $true)]
-        [string]$SubscriptionName,
+        [string]$SubscriptionName,  # Azure subscription name
 
         [Parameter(Mandatory = $true)]
-        [string]$ResourceGroupName,
+        [string]$ResourceGroupName,  # Azure resource group name
 
         [Parameter(Mandatory = $true)]
-        [string]$StorageAccountName,
+        [string]$StorageAccountName,  # Azure storage account name
 
         [Parameter(Mandatory = $true)]
-        [string]$ContainerName,
+        [string]$ContainerName,  # Azure container name
 
         [Parameter(Mandatory = $true)]
-        [string]$FolderPath,
+        [string]$FolderPath,  # Path to the folder
 
-        [switch]$ErrorIfFolderExists
+        [switch]$ErrorIfFolderExists  # Flag to indicate if an error should be thrown if the folder exists
     )
 
+    # Get the subscription ID
     $subId = (get-AzureSubscriptionInfo -SubscriptionName $SubscriptionName).SubscriptionId
     if ($null -eq $subId)
     {
         Write-Error 'Subscription not found.'
         return
-    }
-    else
-    {
-        Write-Verbose "SubscriptionID: $subId"
     }
 
     # Set the current Azure context
@@ -214,15 +211,11 @@ function add-DataLakeFolder
         Write-Error 'Failed to set the Azure context.'
         return
     }
-    else
-    {
-        Write-Verbose $subContext.Name
-    }
 
+    # Check if the Az.Storage module is installed
     if (-not (Get-Module -Name Az.Storage -ListAvailable))
     {
-        Write-Verbose 'Installing Az.Storage module.'
-        Import-Module -Name Az.Storage
+        Import-Module -Name Az.Storage  # Install the Az.Storage module if it's not installed
     }
 
     # Get the Data Lake Storage account
@@ -231,10 +224,6 @@ function add-DataLakeFolder
     {
         Write-Error 'Storage account not found.'
         return
-    }
-    else
-    {
-        Write-Verbose $storageAccount.StorageAccountName
     }
 
     # Set the context to the Data Lake Storage account
@@ -252,13 +241,12 @@ function add-DataLakeFolder
     }
     catch
     {
-        Write-Verbose ('Function: add-DataLakeFolder')
         if ($ErrorIfFolderExists)
         {
             Write-Error "Folder $FolderPath already exists."
             return
         }
-        $ret = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath
+        $ret = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath  # Get the folder if it already exists
         return
     }
 
@@ -269,9 +257,7 @@ function add-DataLakeFolder
     }
     else
     {
-        Write-Verbose ('Function: add-DataLakeFolder')
-        Write-Verbose "Folder created: $FolderPath"
-        return $ret
+        return $ret  # Return the created folder
     }
 }
 
@@ -315,23 +301,24 @@ function remove-DataLakeFolder
 {
     param(
         [Parameter(Mandatory = $true)]
-        [string]$SubscriptionName,
+        [string]$SubscriptionName,  # Azure subscription name
 
         [Parameter(Mandatory = $true)]
-        [string]$ResourceGroupName,
+        [string]$ResourceGroupName,  # Azure resource group name
 
         [Parameter(Mandatory = $true)]
-        [string]$StorageAccountName,
+        [string]$StorageAccountName,  # Azure storage account name
 
         [Parameter(Mandatory = $true)]
-        [string]$ContainerName,
+        [string]$ContainerName,  # Azure container name
 
         [Parameter(Mandatory = $true)]
-        [string]$FolderPath,
+        [string]$FolderPath,  # Path to the folder
 
-        [switch]$ErrorIfFolderDoesNotExist
+        [switch]$ErrorIfFolderDoesNotExist  # Flag to indicate if an error should be thrown if the folder does not exist
     )
 
+    # Get the subscription ID
     $subId = (get-AzureSubscriptionInfo -SubscriptionName $SubscriptionName).SubscriptionId
     if ($null -eq $subId)
     {
@@ -346,10 +333,6 @@ function remove-DataLakeFolder
         Write-Error 'Failed to set the Azure context.'
         return
     }
-    else
-    {
-        Write-Verbose $subContext.Name
-    }
 
     # Get the Data Lake Storage account
     $storageAccount = Get-AzStorageAccount -Name $StorageAccountName -ResourceGroup $ResourceGroupName
@@ -357,10 +340,6 @@ function remove-DataLakeFolder
     {
         Write-Error 'Storage account not found.'
         return
-    }
-    else
-    {
-        Write-Verbose $storageAccount.StorageAccountName
     }
 
     # Set the context to the Data Lake Storage account
@@ -383,7 +362,6 @@ function remove-DataLakeFolder
             Write-Error "Folder '$FolderPath' does not exist to delete."
             return
         }
-        Write-Verbose "Folder '$FolderPath' does not exist to delete."
         return
     }
 
