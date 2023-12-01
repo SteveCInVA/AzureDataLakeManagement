@@ -12,7 +12,7 @@
 RootModule = 'AzureDataLakeManagement.psm1'
 
 # Version number of this module.
-ModuleVersion = '2023.12.1'
+ModuleVersion = '2023.12.3'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
