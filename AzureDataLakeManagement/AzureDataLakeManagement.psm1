@@ -693,126 +693,77 @@ function get-DataLakeFolderACL
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
-        [string]$SubscriptionName,
+        [string]$SubscriptionName, # Azure subscription name
 
         [Parameter(Mandatory = $true)]
-        [string]$ResourceGroupName,
+        [string]$ResourceGroupName, # Azure resource group name
 
         [Parameter(Mandatory = $true)]
-        [string]$StorageAccountName,
+        [string]$StorageAccountName, # Azure storage account name
 
         [Parameter(Mandatory = $true)]
-        [string]$ContainerName,
+        [string]$ContainerName, # Azure container name
 
         [Parameter(Mandatory = $false)]
-        [string]$FolderPath
+        [string]$FolderPath = '/' # Path to the folder in the Data Lake
     )
 
-    if (-not (Get-Module -Name Az.Storage -ListAvailable))
+    # Import necessary modules
+    Import-Module -Name Az.Storage -ErrorAction SilentlyContinue
+    Import-Module -Name AzureAd -ErrorAction SilentlyContinue
+
+    # Remove leading slash or backslash from the folder path
+    if ($FolderPath.Length -gt 1 -and ($FolderPath.StartsWith('/') -or $FolderPath.StartsWith('\')))
     {
-        Write-Verbose 'Installing Az.Storage module.'
-        Import-Module -Name Az.Storage
+        $FolderPath = $FolderPath.Substring(1)
     }
 
-    if (-not (Get-Module -Name AzureAD -ListAvailable))
-    {
-        Write-Verbose 'Installing Az.Storage module.'
-        Import-Module -Name AzureAd
-    }
-
-    #check if the $folderpath is null, and if so set it to '/'
-    if (-not $FolderPath)
-    {
-        $FolderPath = '/'
-    }
-
-    #check if the $folderpath is greater than 1 character, and if so check that it doesn't start with a '/' or a '\'
-    if ($FolderPath.Length -gt 1)
-    {
-        if ($FolderPath.StartsWith('/') -or $FolderPath.StartsWith('\'))
-        {
-            $FolderPath = $FolderPath.Substring(1)
-        }
-    }
-
-    $sub = get-AzureSubscriptionInfo -SubscriptionName $SubscriptionName
-    if ($null -eq $sub)
-    {
-        Write-Error 'Subscription not found. Ensure you have run Connect-AzAccount before execution.'
-        return
-    }
-    else
-    {
-        $subId = $sub.SubscriptionId
-    }
-
-    # Set the current Azure context
-    $subContext = Set-AzContext -Subscription $subId
-    if ($null -eq $subContext)
-    {
-        Write-Error 'Failed to set the Azure context.'
-        return
-    }
-    else
-    {
-        Write-Verbose $subContext.Name
-    }
-
-    # Get the Data Lake Storage account
-    $storageAccount = Get-AzStorageAccount -Name $StorageAccountName -ResourceGroup $ResourceGroupName
-    if ($null -eq $storageAccount)
-    {
-        Write-Error 'Storage account not found.'
-        return
-    }
-    else
-    {
-        Write-Verbose $storageAccount.StorageAccountName
-    }
-
-    # Set the context to the Data Lake Storage account
-    $ctx = $storageAccount.Context
-    if ($null -eq $ctx)
-    {
-        Write-Error 'Failed to set the Data Lake Storage account context.'
-        return
-    }
-
-    # verify the folder exists before setting the ACL
     try
     {
-        $folderExists = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath
-        if ($null -eq $folderExists)
-        {
-            Write-Error('Folder not found.')
-            return
-        }
-    }
-    catch
-    {
-        Write-Error('Folder not found.')
-        return
-    }
+        # Get subscription info
+        $sub = get-AzureSubscriptionInfo -SubscriptionName $SubscriptionName
+        $subId = $sub.SubscriptionId
 
-    # get the ACL for the folder
-    $acls = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath | Select-Object -ExpandProperty ACL
-    $aclResults = New-Object System.Collections.Generic.List[System.Object]
-    foreach ( $ace in $acls)
-    {
-        if ($null -ne $ace.EntityId)
+        # Set the context to the specified subscription
+        $subContext = Set-AzContext -Subscription $subId
+
+        # Get the storage account
+        $storageAccount = Get-AzStorageAccount -Name $StorageAccountName -ResourceGroup $ResourceGroupName
+        $ctx = $storageAccount.Context
+
+        # Check if the folder exists
+        $folderExists = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath
+
+        # Get the ACLs for the folder
+        $acls = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath | Select-Object -ExpandProperty ACL
+
+        # Process each ACL
+        $aclResults = foreach ($ace in $acls)
         {
-            #            Write-Host '--------------------'
-            $adObject = Get-AzureADObjectByObjectId -ObjectIds $ace.EntityId
-            $aclResults.Add([pscustomobject]@{
+            if ($ace.EntityId)
+            {
+                # Get the AD object for the entity
+                $adObject = Get-AzureADObjectByObjectId -ObjectIds $ace.EntityId
+
+                # Create a custom object with the ACL info
+                [pscustomobject]@{
                     DisplayName  = $adObject.DisplayName
                     ObjectId     = $ace.EntityId
                     ObjectType   = $adObject.ObjectType
                     Permissions  = $ace.Permissions
                     DefaultScope = $ace.DefaultScope
-                })
+                }
+            }
         }
+
+        # Return the results
+        return $aclResults
     }
-    return $aclResults
+    catch
+    {
+        # Write any errors to the console
+        Write-Error $_.Exception.Message
+    }
 }
 
 <#
