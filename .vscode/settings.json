@@ -3,6 +3,6 @@
         "pscustomobject"
     ],
     "githubPullRequests.remotes": [
-        "https://github.com/SteveCInVA/Powershell.git"
+        "https://github.com/SteveCInVA/AzureDataLakeManagement.git"
     ]
 }
