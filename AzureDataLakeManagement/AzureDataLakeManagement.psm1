@@ -808,117 +808,66 @@ function move-DataLakeFolder
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
-        [string]$SubscriptionName,
+        [string]$SubscriptionName, # Azure subscription name
 
         [Parameter(Mandatory = $true)]
-        [string]$ResourceGroupName,
+        [string]$ResourceGroupName, # Azure resource group name
 
         [Parameter(Mandatory = $true)]
-        [string]$StorageAccountName,
+        [string]$StorageAccountName, # Azure storage account name
 
         [Parameter(Mandatory = $true)]
-        [string]$SourceContainerName,
+        [string]$SourceContainerName, # Source container name
 
         [Parameter(Mandatory = $true)]
-        [string]$SourceFolderPath,
+        [string]$SourceFolderPath, # Source folder path
 
         [Parameter(Mandatory = $false)]
-        [string]$DestinationContainerName,
+        [string]$DestinationContainerName, # Destination container name
 
         [Parameter(Mandatory = $true)]
-        [string]$DestinationFolderPath
+        [string]$DestinationFolderPath # Destination folder path
     )
 
-    if (-not (Get-Module -Name Az.Storage -ListAvailable))
-    {
-        Write-Verbose 'Installing Az.Storage module.'
-        Import-Module -Name Az.Storage
-    }
+    # Import necessary modules
+    Import-Module -Name Az.Storage -ErrorAction SilentlyContinue
+    Import-Module -Name AzureAd -ErrorAction SilentlyContinue
 
-    if (-not (Get-Module -Name AzureAD -ListAvailable))
-    {
-        Write-Verbose 'Installing Az.Storage module.'
-        Import-Module -Name AzureAd
-    }
-
-    $sub = get-AzureSubscriptionInfo -SubscriptionName $SubscriptionName
-    if ($null -eq $sub)
-    {
-        Write-Error 'Subscription not found. Ensure you have run Connect-AzAccount before execution.'
-        return
-    }
-    else
-    {
-        $subId = $sub.SubscriptionId
-    }
-
-    # Set the current Azure context
-    $subContext = Set-AzContext -Subscription $subId
-    if ($null -eq $subContext)
-    {
-        Write-Error 'Failed to set the Azure context.'
-        return
-    }
-    else
-    {
-        Write-Verbose $subContext.Name
-    }
-
-    # Get the Data Lake Storage account
-    $storageAccount = Get-AzStorageAccount -Name $StorageAccountName -ResourceGroup $ResourceGroupName
-    if ($null -eq $storageAccount)
-    {
-        Write-Error 'Storage account not found.'
-        return
-    }
-    else
-    {
-        Write-Verbose $storageAccount.StorageAccountName
-    }
-
-    # Set the context to the Data Lake Storage account
-    $ctx = $storageAccount.Context
-    if ($null -eq $ctx)
-    {
-        Write-Error 'Failed to set the Data Lake Storage account context.'
-        return
-    }
-
-    # verify the source folder exists before moving
     try
     {
+        # Get subscription info
+        $sub = get-AzureSubscriptionInfo -SubscriptionName $SubscriptionName
+        $subId = $sub.SubscriptionId
+
+        # Set the context to the specified subscription
+        $subContext = Set-AzContext -Subscription $subId
+
+        # Get the storage account
+        $storageAccount = Get-AzStorageAccount -Name $StorageAccountName -ResourceGroup $ResourceGroupName
+        $ctx = $storageAccount.Context
+
+        # Check if the folder exists
         $folderExists = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $SourceContainerName -Path $SourceFolderPath
-        if ($null -eq $folderExists)
+
+        # If destination container name is not provided, use source container name
+        if (-not $DestinationContainerName)
         {
-            Write-Error('Source folder not found.')
-            return
+            $DestinationContainerName = $SourceContainerName
         }
-    }
-    catch
-    {
-        Write-Error('Source folder not found.')
-        return
-    }
 
-    if (-not $DestinationContainerName)
-    {
-        $DestinationContainerName = $SourceContainerName
-    }
+        # Move the folder
+        $ret = Move-AzDataLakeGen2Item -Context $ctx -FileSystem $SourceContainerName -Path $SourceFolderPath -DestFileSystem $DestinationContainerName -DestPath $DestinationFolderPath -Force
 
-    $ret = Move-AzDataLakeGen2Item -Context $ctx -FileSystem $SourceContainerName -Path $SourceFolderPath -DestFileSystem $DestinationContainerName -DestPath $DestinationFolderPath -Force
-
-    if ($null -eq $ret)
-    {
-        Write-Error 'Failed to move folder.'
-        return
-    }
-    else
-    {
+        # Write verbose output and return the result
         Write-Verbose ('Function: move-DataLakeFolder')
         Write-Verbose "Folder moved: $DestinationFolderPath"
         return $ret
     }
-
+    catch
+    {
+        # Write any errors to the console
+        Write-Error $_.Exception.Message
+    }
 }
 
 function remove-DataLakeFolderACL
@@ -926,152 +875,80 @@ function remove-DataLakeFolderACL
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
-        [string]$SubscriptionName,
+        [string]$SubscriptionName, # Azure subscription name
 
         [Parameter(Mandatory = $true)]
-        [string]$ResourceGroupName,
+        [string]$ResourceGroupName, # Azure resource group name
 
         [Parameter(Mandatory = $true)]
-        [string]$StorageAccountName,
+        [string]$StorageAccountName, # Azure storage account name
 
         [Parameter(Mandatory = $true)]
-        [string]$ContainerName,
+        [string]$ContainerName, # Azure container name
 
         [Parameter(Mandatory = $false)]
-        [string]$FolderPath,
+        [string]$FolderPath = '/', # Path to the folder in the Data Lake
 
         [Parameter(Mandatory = $true)]
-        [string]$Identity
+        [string]$Identity # Identity to remove from the ACL
     )
 
-    #verify parameters
-    if (-not (Get-Module -Name Az.Storage -ListAvailable))
-    {
-        Write-Verbose 'Installing Az.Storage module.'
-        Import-Module -Name Az.Storage
-    }
+    # Import necessary modules
+    Import-Module -Name Az.Storage -ErrorAction SilentlyContinue
+    Import-Module -Name AzureAd -ErrorAction SilentlyContinue
 
-    if (-not (Get-Module -Name AzureAD -ListAvailable))
+    # Remove leading slash or backslash from the folder path
+    if ($FolderPath.Length -gt 1 -and ($FolderPath.StartsWith('/') -or $FolderPath.StartsWith('\')))
     {
-        Write-Verbose 'Installing Az.Storage module.'
-        Import-Module -Name AzureAd
+        $FolderPath = $FolderPath.Substring(1)
     }
-
-    #check if the $folderpath is null, and if so set it to '/'
-    if (-not $FolderPath)
-    {
-        $FolderPath = '/'
-    }
-
-    #check if the $folderpath is greater than 1 character, and if so check that it doesn't start with a '/' or a '\'
-    if ($FolderPath.Length -gt 1)
-    {
-        if ($FolderPath.StartsWith('/') -or $FolderPath.StartsWith('\'))
-        {
-            $FolderPath = $FolderPath.Substring(1)
-        }
-    }
-
-    $sub = get-AzureSubscriptionInfo -SubscriptionName $SubscriptionName
-    if ($null -eq $sub)
-    {
-        Write-Error 'Subscription not found. Ensure you have run Connect-AzAccount before execution.'
-        return
-    }
-    else
-    {
-        $subId = $sub.SubscriptionId
-    }
-
-    # Set the current Azure context
-    $subContext = Set-AzContext -Subscription $subId
-    if ($null -eq $subContext)
-    {
-        Write-Error 'Failed to set the Azure context.'
-        return
-    }
-    else
-    {
-        Write-Verbose $subContext.Name
-    }
-
-    # Get the Data Lake Storage account
-    $storageAccount = Get-AzStorageAccount -Name $StorageAccountName -ResourceGroup $ResourceGroupName
-
-    if ($null -eq $storageAccount)
-    {
-        Write-Error 'Storage account not found.'
-        return
-    }
-    else
-    {
-        Write-Verbose $storageAccount.StorageAccountName
-    }
-
-    # Set the context to the Data Lake Storage account
-    $ctx = $storageAccount.Context
-    if ($null -eq $ctx)
-    {
-        Write-Error 'Failed to set the Data Lake Storage account context.'
-        return
-    }
-
-    # Get the object ID of the identity to use in the ACL
-    $identityObj = Get-AADObjectId -Identity $Identity
-    if ($null -eq $identityObj)
-    {
-        Write-Error 'Identity not found.'
-        return
-    }
-    else
-    {
-        Write-Verbose ('{0} ID: {1} Display Name: {2}' -f $identityObj.ObjectType, $identityObj.ObjectId, $identityObj.DisplayName)
-    }
-
-    $id = $identityObj.ObjectId
 
     try
     {
-        $folder = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath -ErrorAction Stop
+        # Get subscription info
+        $sub = get-AzureSubscriptionInfo -SubscriptionName $SubscriptionName
+        $subId = $sub.SubscriptionId
+
+        # Set the context to the specified subscription
+        $subContext = Set-AzContext -Subscription $subId
+
+        # Get the storage account
+        $storageAccount = Get-AzStorageAccount -Name $StorageAccountName -ResourceGroup $ResourceGroupName
+        $ctx = $storageAccount.Context
+
+        # Get the object ID of the identity to use in the ACL
+        $identityObj = Get-AADObjectId -Identity $Identity
+        $id = $identityObj.ObjectId
+
+        # Get the folder
+        $folder = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath
+
+        # Get the ACLs for the folder
+        $acls = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath | Select-Object -ExpandProperty ACL
+
+        # Remove the specified identity from the ACL
+        $newacl = $acls | Where-Object { -not ($_.AccessControlType -eq $identityObj.ObjectType -and $_.EntityId -eq $id) }
+
+        # Update the ACL
+        $result = Set-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $newacl
+
+        # Check if the update was successful
+        if ($result.FailedEntries.Count -gt 0)
+        {
+            Write-Error 'Failed to update the ACL.'
+            Write-Error $result.FailedEntries
+        }
+        else
+        {
+            Write-Host 'ACL updated successfully.'
+            Write-Verbose ('Successful Directories: {0} ' -f $result.TotalDirectoriesSuccessfulCount)
+            Write-Verbose ('Successful Files: {0} ' -f $result.TotalFilesSuccessfulCount)
+        }
     }
     catch
     {
-        Write-Error "Object '$FolderPath' does not exist."
-        return
-    }
-
-    # set existing ACL's to review for existing permission to remove
-    $acls = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath | Select-Object -ExpandProperty ACL
-    $newacl = $acls
-
-    #loop through existing ACL's and remove the specified identity
-    $i = 0
-    foreach ($a in $acls)
-    {
-        if (($a.AccessControlType -eq $identityObj.ObjectType -and $a.EntityId -eq $id) -and $null -ne $a.EntityId)
-        {
-            if ($null -ne $a.EntityId)
-            {
-                $newacl = $newacl | Where-Object { $_ -ne $newacl[$i] }
-            }
-        }
-        $i++
-    }
-
-    #update the acl and all objects underneath
-    $result = Set-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $newacl -ErrorAction Stop
-
-    if ($result.FailedEntries.Count -gt 0)
-    {
-        Write-Error 'Failed to update the ACL.'
-        Write-Error $result.FailedEntries
-        return
-    }
-    else
-    {
-        Write-Host 'ACL updated successfully.'
-        Write-Verbose ('Successful Directories: {0} ' -f $result.TotalDirectoriesSuccessfulCount)
-        Write-Verbose ('Successful Files: {0} ' -f $result.TotalFilesSuccessfulCount)
+        # Write any errors to the console
+        Write-Error $_.Exception.Message
     }
 }
 
