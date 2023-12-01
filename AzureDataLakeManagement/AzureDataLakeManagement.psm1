@@ -51,30 +51,36 @@ function Get-AADObjectId
 
         # Try to get the user, group, and service principal in one go
         $user = Get-AzureADUser -Filter "UserPrincipalName eq '$Identity'" -ErrorAction SilentlyContinue
-        if ($null -eq $user) {
+        if ($null -eq $user)
+        {
             $group = Get-AzureADGroup -Filter "DisplayName eq '$Identity'" -ErrorAction SilentlyContinue
-            if ($null -eq $group) {
+            if ($null -eq $group)
+            {
                 $sp = Get-AzureADServicePrincipal -Filter "DisplayName eq '$Identity'" -ErrorAction SilentlyContinue
             }
         }
 
         # Check which object is not null and assign the corresponding values
-        if ($null -ne $user) {
+        if ($null -ne $user)
+        {
             $objectType = 'User'
             $objectId = $user.ObjectId
             $displayName = $user.DisplayName
         }
-        elseif ($null -ne $group) {
+        elseif ($null -ne $group)
+        {
             $objectType = 'Group'
             $objectId = $group.ObjectId
             $displayName = $group.DisplayName
         }
-        elseif ($null -ne $sp) {
+        elseif ($null -ne $sp)
+        {
             $objectType = 'ServicePrincipal'
             $objectId = $sp.ObjectId
             $displayName = $sp.DisplayName
         }
-        else {
+        else
+        {
             Write-Error ('Object not found.  Unable to find object "{0}" in Azure AD.' -f $Identity)
             return
         }
@@ -214,19 +220,19 @@ function add-DataLakeFolder
 {
     param(
         [Parameter(Mandatory = $true)]
-        [string]$SubscriptionName,  # Azure subscription name
+        [string]$SubscriptionName, # Azure subscription name
 
         [Parameter(Mandatory = $true)]
-        [string]$ResourceGroupName,  # Azure resource group name
+        [string]$ResourceGroupName, # Azure resource group name
 
         [Parameter(Mandatory = $true)]
-        [string]$StorageAccountName,  # Azure storage account name
+        [string]$StorageAccountName, # Azure storage account name
 
         [Parameter(Mandatory = $true)]
-        [string]$ContainerName,  # Azure container name
+        [string]$ContainerName, # Azure container name
 
         [Parameter(Mandatory = $true)]
-        [string]$FolderPath,  # Path to the folder
+        [string]$FolderPath, # Path to the folder
 
         [switch]$ErrorIfFolderExists  # Flag to indicate if an error should be thrown if the folder exists
     )
@@ -335,19 +341,19 @@ function remove-DataLakeFolder
 {
     param(
         [Parameter(Mandatory = $true)]
-        [string]$SubscriptionName,  # Azure subscription name
+        [string]$SubscriptionName, # Azure subscription name
 
         [Parameter(Mandatory = $true)]
-        [string]$ResourceGroupName,  # Azure resource group name
+        [string]$ResourceGroupName, # Azure resource group name
 
         [Parameter(Mandatory = $true)]
-        [string]$StorageAccountName,  # Azure storage account name
+        [string]$StorageAccountName, # Azure storage account name
 
         [Parameter(Mandatory = $true)]
-        [string]$ContainerName,  # Azure container name
+        [string]$ContainerName, # Azure container name
 
         [Parameter(Mandatory = $true)]
-        [string]$FolderPath,  # Path to the folder
+        [string]$FolderPath, # Path to the folder
 
         [switch]$ErrorIfFolderDoesNotExist  # Flag to indicate if an error should be thrown if the folder does not exist
     )
@@ -628,7 +634,7 @@ function set-DataLakeFolderACL
 
     try
     {
-        $acl = Set-AzDataLakeGen2ItemAclObject -AccessControlType Mask  -Permission "rwx" -InputObject $acl
+        $acl = Set-AzDataLakeGen2ItemAclObject -AccessControlType Mask -Permission 'rwx' -InputObject $acl
         $acl = Set-AzDataLakeGen2ItemAclObject -AccessControlType $identityType -EntityId $identityObj.ObjectId -Permission $permission -InputObject $acl
         $result = Update-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $acl
     }
@@ -655,7 +661,7 @@ function set-DataLakeFolderACL
     if ($IncludeDefaultScope)
     {
         Write-Verbose 'include default scope'
-        $acl = Set-AzDataLakeGen2ItemAclObject -AccessControlType Mask  -Permission "rwx" -InputObject $acl -DefaultScope
+        $acl = Set-AzDataLakeGen2ItemAclObject -AccessControlType Mask -Permission 'rwx' -InputObject $acl -DefaultScope
         $acl = Set-AzDataLakeGen2ItemAclObject -AccessControlType $identityType -EntityId $identityObj.ObjectId -Permission $permission -InputObject $acl -DefaultScope
         $result = Update-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $acl
 
