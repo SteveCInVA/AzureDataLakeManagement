@@ -24,29 +24,48 @@
 function Get-AADObjectId
 {
     param (
+        # The identity for which the Azure AD Object ID is to be fetched
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [string]$Identity
     )
 
-    # Check if the Identity is a username, group name, or service principal name
+    # Replacing single quotes in the identity with double single quotes
     $Identity = $Identity.Replace("'", "''")
+
     try
     {
-        if (Get-AzureADUser -Filter "UserPrincipalName eq '$Identity'")
-        {
+        # Initializing user, group, and service principal to null
+        $user = $null
+        $group = $null
+        $sp = $null
+
+        # Try to get the user, group, and service principal in one go
+        $user = Get-AzureADUser -Filter "UserPrincipalName eq '$Identity'" -ErrorAction SilentlyContinue
+        if ($null -eq $user) {
+            $group = Get-AzureADGroup -Filter "DisplayName eq '$Identity'" -ErrorAction SilentlyContinue
+            if ($null -eq $group) {
+                $sp = Get-AzureADServicePrincipal -Filter "DisplayName eq '$Identity'" -ErrorAction SilentlyContinue
+            }
+        }
+
+        # Check which object is not null and assign the corresponding values
+        if ($null -ne $user) {
             $objectType = 'User'
+            $objectId = $user.ObjectId
+            $displayName = $user.DisplayName
         }
-        elseif (Get-AzureADGroup -Filter "DisplayName eq '$Identity'")
-        {
+        elseif ($null -ne $group) {
             $objectType = 'Group'
+            $objectId = $group.ObjectId
+            $displayName = $group.DisplayName
         }
-        elseif (Get-AzureADServicePrincipal -Filter "DisplayName eq '$Identity'")
-        {
+        elseif ($null -ne $sp) {
             $objectType = 'ServicePrincipal'
+            $objectId = $sp.ObjectId
+            $displayName = $sp.DisplayName
         }
-        else
-        {
+        else {
             Write-Error ('Object not found.  Unable to find object "{0}" in Azure AD.' -f $Identity)
             return
         }
@@ -62,41 +81,12 @@ function Get-AADObjectId
         return
     }
 
-    # Get the object ID based on the identity and object type
-    $objectId = ''
-    switch ($objectType)
-    {
-        ''
-        {
-            Write-Error ('Object not found.  Unable to find object "{0}" in Azure AD.' -f $Identity)
-            return
-        }
-        'User'
-        {
-            $user = Get-AzureADUser -Filter "UserPrincipalName eq '$Identity'"
-            $objectId = $user.ObjectId
-            $displayName = $user.DisplayName
-            break
-        }
-        'Group'
-        {
-            $group = Get-AzureADGroup -Filter "DisplayName eq '$Identity'"
-            $objectId = $group.ObjectId
-            $displayName = $group.DisplayName
-            break
-        }
-        'ServicePrincipal'
-        {
-            $sp = Get-AzureADServicePrincipal -Filter "DisplayName eq '$Identity'"
-            $objectId = $sp.ObjectId
-            $displayName = $sp.DisplayName
-            break
-        }
-    }
+    # Output the object details
     Write-Verbose "Object ID: $objectId"
     Write-Verbose "Object Type: $objectType"
     Write-Verbose "Object Name: $displayName"
 
+    # Create a custom object to return
     $object = [PSCustomObject]@{
         ObjectId    = $objectId
         ObjectType  = $objectType
