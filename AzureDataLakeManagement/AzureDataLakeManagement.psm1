@@ -1,9 +1,12 @@
 <#
 .SYNOPSIS
-    Gets the object ID, object type, and display name for a given Azure AD user, group, or service principal.
+    This function retrieves the object ID, object type, and display name for a specified Azure AD user, group, or service principal.
+
+.DESCRIPTION
+    Get-AADObjectId is a function that takes an identity as a parameter and returns the object ID, object type, and display name of the corresponding Azure AD user, group, or service principal. It requires an active connection to Azure AD.
 
 .PARAMETER Identity
-    Specifies the user principal name, group display name, or service principal display name of the object to retrieve.
+    The Identity parameter specifies the user principal name, group display name, or service principal display name of the object to retrieve. This parameter is mandatory.
 
 .EXAMPLE
     PS C:\> Get-AADObjectId -Identity "johndoe@contoso.com"
@@ -11,12 +14,18 @@
     --------                                ----------      -----------
     12345678-1234-1234-1234-1234567890ab    User            John Doe
 
-    Description
-    -----------
     This example retrieves the object ID, object type, and display name for the Azure AD user with the user principal name "johndoe@contoso.com".
 
+.EXAMPLE
+    PS C:\> Get-AADObjectId -Identity "HR Group"
+    ObjectId                                ObjectType      DisplayName
+    --------                                ----------      -----------
+    87654321-4321-4321-4321-ba0987654321    Group           HR Group
+
+    This example retrieves the object ID, object type, and display name for the Azure AD group with the display name "HR Group".
+
 .NOTES
-    Requires an active connection to Azure AD using Connect-AzureAD.
+    This function requires an active connection to Azure AD using Connect-AzureAD. If the specified identity does not exist, the function will return an error message.
 
     Author: Stephen Carroll - Microsoft
     Date:   2021-08-31
@@ -97,15 +106,24 @@ function Get-AADObjectId
 
 <#
 .SYNOPSIS
-    Gets the subscription ID and tenant ID for the specified Azure subscription.
+    Retrieves the subscription ID and tenant ID for a specified Azure subscription.
+
 .DESCRIPTION
-    Gets the subscription ID and tenant ID for the specified Azure subscription.
+    The get-AzureSubscriptionInfo function takes a subscription name as a parameter and returns a custom object containing the subscription ID and tenant ID for the specified Azure subscription. It requires an active connection to Azure.
+
 .PARAMETER SubscriptionName
-    The name of the Azure subscription to use.
+    The SubscriptionName parameter specifies the name of the Azure subscription for which to retrieve the subscription ID and tenant ID. This parameter is mandatory.
+
 .EXAMPLE
-    get-AzureSubscriptionInfo -SubscriptionName 'MySubscription'
+    PS C:\> get-AzureSubscriptionInfo -SubscriptionName 'MySubscription'
+    SubscriptionId                                TenantId
+    --------------                                --------
+    12345678-1234-1234-1234-1234567890ab          87654321-4321-4321-4321-ba0987654321
+
+    This example retrieves the subscription ID and tenant ID for the Azure subscription named 'MySubscription'.
+
 .NOTES
-    Requires an active connection to Azure using Connect-AzAccount
+    This function requires an active connection to Azure using Connect-AzAccount. If the specified subscription does not exist, the function will return an error message.
 
     Author: Stephen Carroll - Microsoft
     Date:   2021-08-31
@@ -160,20 +178,37 @@ function get-AzureSubscriptionInfo
 <#
 .SYNOPSIS
     Creates a folder in a Data Lake Storage account.
+
 .DESCRIPTION
-    Creates a folder (or folder hierarchy) in a Data Lake storage account container
-.Parameter SubscriptionName
-    The name of the Azure subscription to use.
-.Parameter ResourceGroupName
-    The name of the resource group containing the Data Lake Storage account.
-.Parameter StorageAccountName
-    The name of the Data Lake Storage account.
-.Parameter ContainerName
-    The name of the container in the Data Lake Storage account.
-.Parameter FolderPath
-    The path of the folder to create. May be a single folder or a folder hierarchy. (e.g. 'folder1/folder2/folder3')
-.Parameter ErrorIfFolderExists
-    Optional switch to throw error if folder exists.  If not specified, will return the existing folder.
+    The add-DataLakeFolder function creates a folder (or folder hierarchy) in a Data Lake storage account container. It requires an active connection to Azure.
+
+.PARAMETER SubscriptionName
+    The name of the Azure subscription to use. This parameter is mandatory.
+
+.PARAMETER ResourceGroupName
+    The name of the resource group containing the Data Lake Storage account. This parameter is mandatory.
+
+.PARAMETER StorageAccountName
+    The name of the Data Lake Storage account. This parameter is mandatory.
+
+.PARAMETER ContainerName
+    The name of the container in the Data Lake Storage account. This parameter is mandatory.
+
+.PARAMETER FolderPath
+    The path of the folder to create. May be a single folder or a folder hierarchy (e.g. 'folder1/folder2/folder3'). This parameter is mandatory.
+
+.PARAMETER ErrorIfFolderExists
+    Optional switch to throw error if folder exists. If not specified, will return the existing folder.
+
+.EXAMPLE
+    PS C:\> add-DataLakeFolder -SubscriptionName 'MySubscription' -ResourceGroupName 'MyResourceGroup' -StorageAccountName 'MyStorageAccount' -ContainerName 'MyContainer' -FolderPath 'folder1/folder2/folder3'
+    This example creates a folder hierarchy 'folder1/folder2/folder3' in the specified Data Lake storage account container.
+
+.NOTES
+    This function requires an active connection to Azure using Connect-AzAccount. If the specified subscription, resource group, storage account, or container does not exist, the function will return an error message.
+
+    Author: Stephen Carroll - Microsoft
+    Date:   2021-08-31
 #>
 function add-DataLakeFolder
 {
@@ -266,36 +301,35 @@ function add-DataLakeFolder
     Deletes a folder from an Azure Data Lake Storage Gen2 account.
 
 .DESCRIPTION
-    This function deletes a folder from an Azure Data Lake Storage Gen2 account.
-    It requires the subscription name, resource group name, storage account name, container name, and folder path as input parameters.
-    If the folder does not exist, it will return an error unless the -ErrorIfFolderDoesNotExist switch is used.
+    The remove-DataLakeFolder function deletes a folder from an Azure Data Lake Storage Gen2 account. It requires the subscription name, resource group name, storage account name, container name, and folder path as input parameters. If the folder does not exist, it will return an error unless the -ErrorIfFolderDoesNotExist switch is used.
 
 .PARAMETER SubscriptionName
-    The name of the Azure subscription.
+    The name of the Azure subscription. This parameter is mandatory.
 
 .PARAMETER ResourceGroupName
-    The name of the resource group containing the storage account.
+    The name of the resource group containing the storage account. This parameter is mandatory.
 
 .PARAMETER StorageAccountName
-    The name of the storage account.
+    The name of the storage account. This parameter is mandatory.
 
 .PARAMETER ContainerName
-    The name of the container containing the folder.
+    The name of the container containing the folder. This parameter is mandatory.
 
 .PARAMETER FolderPath
-    The path of the folder to delete.
+    The path of the folder to delete. This parameter is mandatory.
 
 .PARAMETER ErrorIfFolderDoesNotExist
     If this switch is used, the function will not return an error if the folder does not exist.
 
 .EXAMPLE
-    remove-DataLakeFolder -SubscriptionName "MySubscription" -ResourceGroupName "MyResourceGroup" -StorageAccountName "MyStorageAccount" -ContainerName "MyContainer" -FolderPath "MyFolder"
-
+    PS C:\> remove-DataLakeFolder -SubscriptionName "MySubscription" -ResourceGroupName "MyResourceGroup" -StorageAccountName "MyStorageAccount" -ContainerName "MyContainer" -FolderPath "MyFolder"
     This example deletes the folder "MyFolder" from the container "MyContainer" in the storage account "MyStorageAccount" in the resource group "MyResourceGroup" in the "MySubscription" Azure subscription.
 
 .NOTES
-    Author: Unknown
-    Last Edit: Unknown
+    This function requires an active connection to Azure using Connect-AzAccount. If the specified subscription, resource group, storage account, or container does not exist, the function will return an error message.
+
+    Author: Stephen Carroll - Microsoft
+    Date:   2021-08-31
 #>
 function remove-DataLakeFolder
 {
@@ -385,56 +419,47 @@ function remove-DataLakeFolder
 
 <#
 .SYNOPSIS
-Sets the Access Control List (ACL) for a folder in an Azure Data Lake Storage Gen2 account.
+    Sets the Access Control List (ACL) for a folder in an Azure Data Lake Storage Gen2 account.
 
 .DESCRIPTION
-The set-DataLakeFolderACL function sets the Access Control List (ACL) for a folder in an Azure Data Lake Storage Gen2 account.
-The function requires the following parameters:
-- SubscriptionName: The name of the Azure subscription.
-- ResourceGroupName: The name of the resource group containing the storage account.
-- StorageAccountName: The name of the storage account.
-- ContainerName: The name of the container.
-- FolderPath: The path of the folder.
-- Identity: The identity to use in the ACL.
-- AccessControlType: The type of access control to apply to the folder. Valid values are 'Read' and 'Write'.
-- SetContainerACL:  A switch parameter that specifies whether to set the ACL for the container.
-- IncludeDefaultScope: A switch parameter that specifies whether to include the default scope in the ACL.
+    The set-DataLakeFolderACL function sets the Access Control List (ACL) for a folder in an Azure Data Lake Storage Gen2 account. It requires the subscription name, resource group name, storage account name, container name, folder path, identity, and access control type as input parameters. Optionally, it can also set the ACL for the container and include the default scope in the ACL.
 
 .PARAMETER SubscriptionName
-The name of the Azure subscription.
+    The name of the Azure subscription. This parameter is mandatory.
 
 .PARAMETER ResourceGroupName
-The name of the resource group containing the storage account.
+    The name of the resource group containing the storage account. This parameter is mandatory.
 
 .PARAMETER StorageAccountName
-The name of the storage account.
+    The name of the storage account. This parameter is mandatory.
 
 .PARAMETER ContainerName
-The name of the container.
+    The name of the container containing the folder. This parameter is mandatory.
 
 .PARAMETER FolderPath
-The path of the folder.
+    The path of the folder. This parameter is mandatory.
 
 .PARAMETER Identity
-The identity to use in the ACL.
+    The identity to use in the ACL. This parameter is mandatory.
 
 .PARAMETER AccessControlType
-The type of access control to apply to the folder. Valid values are 'Read' and 'Write'.
+    The type of access control to apply to the folder. Valid values are 'Read' and 'Write'. This parameter is mandatory.
 
 .PARAMETER SetContainerACL
-A switch parameter that specifies whether to set the the specified identity on the root of the specified container.
+    A switch parameter that specifies whether to set the ACL for the container. This parameter is optional.
 
 .PARAMETER IncludeDefaultScope
-A switch parameter that specifies whether to include the default scope in the ACL.
+    A switch parameter that specifies whether to include the default scope in the ACL. This parameter is optional.
 
 .EXAMPLE
-set-DataLakeFolderACL -SubscriptionName "MySubscription" -ResourceGroupName "MyResourceGroup" -StorageAccountName "MyStorageAccount" -ContainerName "MyContainer" -FolderPath "/MyFolder" -Identity "MyIdentity" -AccessControlType "Read" -IncludeDefaultScope
-
-This example sets the ACL for the folder "/MyFolder" in the container "MyContainer" in the storage account "MyStorageAccount" in the resource group "MyResourceGroup" for the identity "MyIdentity" with read access.
+    PS C:\> set-DataLakeFolderACL -SubscriptionName "MySubscription" -ResourceGroupName "MyResourceGroup" -StorageAccountName "MyStorageAccount" -ContainerName "MyContainer" -FolderPath "/MyFolder" -Identity "MyIdentity" -AccessControlType "Read" -IncludeDefaultScope
+    This example sets the ACL for the folder "/MyFolder" in the container "MyContainer" in the storage account "MyStorageAccount" in the resource group "MyResourceGroup" for the identity "MyIdentity" with read access and includes the default scope in the ACL.
 
 .NOTES
-Requires the Az.Storage module.
-Note:  setting the setContainerACL will enable place the requested identity at the root of the container with read-execute permissions.  A default will not be set at this level.
+    This function requires the Az.Storage module and an active connection to Azure using Connect-AzAccount. If the specified subscription, resource group, storage account, container, or folder does not exist, the function will return an error message. If the specified identity does not exist, the function will return an error message. If the specified access control type is not 'Read' or 'Write', the function will return an error message.
+
+    Author: Stephen Carroll - Microsoft
+    Date:   2021-08-31
 #>
 function set-DataLakeFolderACL
 {
@@ -656,37 +681,32 @@ function set-DataLakeFolderACL
     Gets the Access Control List (ACL) for a folder in Azure Data Lake Storage Gen2.
 
 .DESCRIPTION
-    This function gets the Access Control List (ACL) for a folder in Azure Data Lake Storage Gen2.
-    It requires the following parameters:
-    - SubscriptionName: The name of the Azure subscription.
-    - ResourceGroupName: The name of the resource group containing the storage account.
-    - StorageAccountName: The name of the storage account.
-    - ContainerName: The name of the container.
-    - FolderPath: The path of the folder. (Optional:  If omitted, will revert to the root of the container.)
+    The get-DataLakeFolderACL function retrieves the Access Control List (ACL) for a folder in Azure Data Lake Storage Gen2. It requires the subscription name, resource group name, storage account name, and container name as input parameters. Optionally, it can also take a folder path. If the folder path is not provided, the function will revert to the root of the container.
 
 .PARAMETER SubscriptionName
-    The name of the Azure subscription.
+    The name of the Azure subscription. This parameter is mandatory.
 
 .PARAMETER ResourceGroupName
-    The name of the resource group containing the storage account.
+    The name of the resource group containing the storage account. This parameter is mandatory.
 
 .PARAMETER StorageAccountName
-    The name of the storage account.
+    The name of the storage account. This parameter is mandatory.
 
 .PARAMETER ContainerName
-    The name of the container.
+    The name of the container. This parameter is mandatory.
 
 .PARAMETER FolderPath
-    The path of the folder. (Optional:  If omitted, will revert to the root of the container.)
+    The path of the folder. This parameter is optional. If omitted, the function will revert to the root of the container.
 
 .EXAMPLE
     PS C:\> get-DataLakeFolderACL -SubscriptionName "MySubscription" -ResourceGroupName "MyResourceGroup" -StorageAccountName "MyStorageAccount" -ContainerName "MyContainer" -FolderPath "/MyFolder"
-
     This example gets the ACL for the folder "/MyFolder" in the container "MyContainer" of the storage account "MyStorageAccount" in the resource group "MyResourceGroup" of the Azure subscription "MySubscription".
 
 .NOTES
-    Author: Unknown
-    Last Edit: Unknown
+    This function requires the Az.Storage and AzureAd modules and an active connection to Azure using Connect-AzAccount. If the specified subscription, resource group, storage account, or container does not exist, the function will return an error message. If the specified folder does not exist, the function will return an error message.
+
+    Author: Stephen Carroll - Microsoft
+    Date:   2021-08-31
 #>
 function get-DataLakeFolderACL
 {
@@ -768,40 +788,41 @@ function get-DataLakeFolderACL
 
 <#
 .SYNOPSIS
-Moves a folder in Azure Data Lake Storage Gen2 to a new location.
+    Moves a folder in Azure Data Lake Storage Gen2 to a new location.
 
 .DESCRIPTION
-The move-DataLakeFolder function moves a folder in Azure Data Lake Storage Gen2 to a new location.
+    The move-DataLakeFolder function moves a folder in Azure Data Lake Storage Gen2 to a new location. It requires the subscription name, resource group name, storage account name, source container name, source folder path, and destination folder path as input parameters. Optionally, it can also take a destination container name. If the destination container name is not provided, the function will use the source container name.
 
 .PARAMETER SubscriptionName
-The name of the Azure subscription containing the Data Lake Storage Gen2 account.
+    The name of the Azure subscription containing the Data Lake Storage Gen2 account. This parameter is mandatory.
 
 .PARAMETER ResourceGroupName
-The name of the Resource Group containint the Data Lake Storage Gen2 account.
+    The name of the resource group containing the Data Lake Storage Gen2 account. This parameter is mandatory.
 
 .PARAMETER StorageAccountName
-The name of the Data Lake Storage Gen2 account.
+    The name of the Data Lake Storage Gen2 account. This parameter is mandatory.
 
 .PARAMETER SourceContainerName
-The name of the source container for the copy operation.
+    The name of the source container for the move operation. This parameter is mandatory.
 
 .PARAMETER SourceFolderPath
-The name of the folder to copy.
+    The path of the folder to move. This parameter is mandatory.
 
 .PARAMETER DestinationContainerName
-[Optional] - If not specified will default to the SourceContainerName.
-The name of the destination container for the copy operation.
+    The name of the destination container for the move operation. This parameter is optional. If not specified, the function will use the source container name.
 
-.PARAMETER destinationFolderPath
-The name of the destination folder
+.PARAMETER DestinationFolderPath
+    The path of the destination folder. This parameter is mandatory.
 
 .EXAMPLE
-PS C:\> move-datalakefolder -subscriptionName 'subscriptionName' -resourcegroupname 'sourceResourceGroup' -storageAccountName 'mydatalake' -SourceContainerName 'container1' -SourceFolderPath '/source/folder/path' -destinationFolderPath '/destination/folder/path'
-
-Moves the folder at "/source/folder/path" to "/destination/folder/path" in the "mydatalake" Data Lake Storage Gen1 account, which is located in the "sourceResourceGroup" resource group. The destination account is located in the "destinationResourceGroup" resource group.
+    PS C:\> move-DataLakeFolder -SubscriptionName "MySubscription" -ResourceGroupName "MyResourceGroup" -StorageAccountName "MyStorageAccount" -SourceContainerName "MySourceContainer" -SourceFolderPath "/MySourceFolder" -DestinationFolderPath "/MyDestinationFolder"
+    This example moves the folder "/MySourceFolder" from the container "MySourceContainer" in the storage account "MyStorageAccount" in the resource group "MyResourceGroup" in the Azure subscription "MySubscription" to the folder "/MyDestinationFolder" in the same container.
 
 .NOTES
-This function requires the AzureRM.DataLakeStore PowerShell module to be installed.
+    This function requires the Az.Storage and AzureAd modules and an active connection to Azure using Connect-AzAccount. If the specified subscription, resource group, storage account, container, or folder does not exist, the function will return an error message.
+
+    Author: Stephen Carroll - Microsoft
+    Date:   2021-08-31
 #>
 function move-DataLakeFolder
 {
@@ -870,6 +891,41 @@ function move-DataLakeFolder
     }
 }
 
+<#
+.SYNOPSIS
+    Removes an identity from the Access Control List (ACL) of a folder in Azure Data Lake Storage Gen2.
+
+.DESCRIPTION
+    The remove-DataLakeFolderACL function removes an identity from the Access Control List (ACL) of a folder in Azure Data Lake Storage Gen2. It requires the subscription name, resource group name, storage account name, container name, and identity as input parameters. Optionally, it can also take a folder path. If the folder path is not provided, the function will revert to the root of the container.
+
+.PARAMETER SubscriptionName
+    The name of the Azure subscription containing the Data Lake Storage Gen2 account. This parameter is mandatory.
+
+.PARAMETER ResourceGroupName
+    The name of the resource group containing the Data Lake Storage Gen2 account. This parameter is mandatory.
+
+.PARAMETER StorageAccountName
+    The name of the Data Lake Storage Gen2 account. This parameter is mandatory.
+
+.PARAMETER ContainerName
+    The name of the container. This parameter is mandatory.
+
+.PARAMETER FolderPath
+    The path of the folder. This parameter is optional. If not specified, the function will revert to the root of the container.
+
+.PARAMETER Identity
+    The identity to remove from the ACL. This parameter is mandatory.
+
+.EXAMPLE
+    PS C:\> remove-DataLakeFolderACL -SubscriptionName "MySubscription" -ResourceGroupName "MyResourceGroup" -StorageAccountName "MyStorageAccount" -ContainerName "MyContainer" -Identity "MyIdentity"
+    This example removes the identity "MyIdentity" from the ACL of the root of the container "MyContainer" in the storage account "MyStorageAccount" in the resource group "MyResourceGroup" in the Azure subscription "MySubscription".
+
+.NOTES
+    This function requires the Az.Storage and AzureAd modules and an active connection to Azure using Connect-AzAccount. If the specified subscription, resource group, storage account, container, or folder does not exist, the function will return an error message. If the specified identity does not exist, the function will return an error message.
+
+    Author: Stephen Carroll - Microsoft
+    Date:   2021-08-31
+#>
 function remove-DataLakeFolderACL
 {
     [CmdletBinding()]
