@@ -11,7 +11,7 @@ To contribute to this project please view the GitHub project at https://github.c
 ## Version History:
 
 - 2023.12.3 - 12/01/2023
-Published via Github Actions
+Published via Github Actions to [PowershellGallery.com](https://www.powershellgallery.com/packages/AzureDataLakeManagement)
 
 - 2023.12.2 - 12/01/2023
 Removed - Github Action Publish testing
