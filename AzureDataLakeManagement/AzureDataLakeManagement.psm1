@@ -268,7 +268,7 @@ function add-DataLakeFolder
     }
 
     # Set the context to the Data Lake Storage account
-    $ctx = New-AzStorageContext -StorageAccountName $StorageAccountName -UseConnectedAccount
+    $ctx = New-AzStorageContext -StorageAccountName $StorageAccountName
     if ($null -eq $ctx)
     {
         Write-Error 'Failed to set the Data Lake Storage account context.'
@@ -747,14 +747,14 @@ function get-DataLakeFolderACL
     try
     {
         # Get subscription info
-        $sub = get-AzureSubscriptionInfo -SubscriptionName $SubscriptionName
-        $subId = $sub.SubscriptionId
+        #REMOVE:#$sub = get-AzureSubscriptionInfo -SubscriptionName $SubscriptionName
+        #REMOVE:# $subId = $sub.SubscriptionId
 
         # Set the context to the specified subscription
-        $subContext = Set-AzContext -Subscription $subId
+        #REMOVE:# $subContext = Set-AzContext -Subscription $subId
 
         # Get the storage account
-        $storageAccount = Get-AzStorageAccount -Name $StorageAccountName -ResourceGroup $ResourceGroupName
+        #REMOVE:# $storageAccount = Get-AzStorageAccount -Name $StorageAccountName -ResourceGroup $ResourceGroupName
         $ctx = New-AzStorageContext -StorageAccountName $StorageAccountName -UseConnectedAccount
 
         # Check if the folder exists
@@ -772,7 +772,7 @@ function get-DataLakeFolderACL
                 $adObject = Get-AzureADObjectByObjectId -ObjectIds $ace.EntityId
 
                 # Create a custom object with the ACL info
-                [pscustomobject]@{
+                [PSCustomObject]@{
                     DisplayName  = $adObject.DisplayName
                     ObjectId     = $ace.EntityId
                     ObjectType   = $adObject.ObjectType
@@ -862,16 +862,8 @@ function move-DataLakeFolder
 
     try
     {
-        # Get subscription info
-        $sub = get-AzureSubscriptionInfo -SubscriptionName $SubscriptionName
-        $subId = $sub.SubscriptionId
 
-        # Set the context to the specified subscription
-        $subContext = Set-AzContext -Subscription $subId
-
-        # Get the storage account
-        $storageAccount = Get-AzStorageAccount -Name $StorageAccountName -ResourceGroup $ResourceGroupName
-        $ctx = New-AzStorageContext -StorageAccountName $StorageAccountName -UseConnectedAccount
+        $ctx = New-AzStorageContext -StorageAccountName $StorageAccountName
 
         # Check if the folder exists
         $folderExists = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $SourceContainerName -Path $SourceFolderPath
@@ -968,14 +960,14 @@ function remove-DataLakeFolderACL
     try
     {
         # Get subscription info
-        $sub = get-AzureSubscriptionInfo -SubscriptionName $SubscriptionName
-        $subId = $sub.SubscriptionId
+        #REMOVE:# $sub = get-AzureSubscriptionInfo -SubscriptionName $SubscriptionName
+        #REMOVE:# $subId = $sub.SubscriptionId
 
         # Set the context to the specified subscription
-        $subContext = Set-AzContext -Subscription $subId
+        #REMOVE:# $subContext = Set-AzContext -Subscription $subId
 
         # Get the storage account
-        $storageAccount = Get-AzStorageAccount -Name $StorageAccountName -ResourceGroup $ResourceGroupName
+        #REMOVE:# $storageAccount = Get-AzStorageAccount -Name $StorageAccountName -ResourceGroup $ResourceGroupName
         $ctx = New-AzStorageContext -StorageAccountName $StorageAccountName -UseConnectedAccount
 
         # Get the object ID of the identity to use in the ACL
