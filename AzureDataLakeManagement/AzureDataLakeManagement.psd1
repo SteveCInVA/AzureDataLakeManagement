@@ -72,7 +72,7 @@ PowerShellVersion = '5.1'
 FunctionsToExport = 'Get-AADObjectId', 'get-AzureSubscriptionInfo', 'add-DataLakeFolder',
                'remove-DataLakeFolder', 'set-DataLakeFolderACL',
                'get-DataLakeFolderACL', 'move-DataLakeFolder',
-               'remove-DataLakeFolderACL'
+               'remove-DataLakeFolderACL', 'Send-FileToDataLake'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()

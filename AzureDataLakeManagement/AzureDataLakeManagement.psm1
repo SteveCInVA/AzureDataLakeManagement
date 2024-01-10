@@ -989,4 +989,63 @@ function remove-DataLakeFolderACL
     }
 }
 
+function Send-FileToDataLake
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$SubscriptionName, # Azure subscription name
+
+        [Parameter(Mandatory = $true)]
+        [string]$ResourceGroupName, # Azure resource group name
+
+        [Parameter(Mandatory = $true)]
+        [string]$StorageAccountName, # Azure storage account name
+
+        [Parameter(Mandatory = $true)]
+        [string]$ContainerName, # Azure container name
+
+        [Parameter(Mandatory = $true)]
+        [string]$FolderPath, # Path to the folder in the Data Lake
+
+        [Parameter(Mandatory = $true)]
+        [string]$LocalFilePath, # Path to the local file to upload
+
+        [switch]$AllowFileOverwrite # Flag to indicate if the file should be overwritten if it already exists
+    )
+
+    # Import necessary modules
+    Import-Module -Name Az.Storage -ErrorAction SilentlyContinue
+    Import-Module -Name AzureAd -ErrorAction SilentlyContinue
+
+    # Remove leading slash or backslash from the folder path
+    if ($FolderPath.Length -gt 1 -and ($FolderPath.StartsWith('/') -or $FolderPath.StartsWith('\')))
+    {
+        $FolderPath = $FolderPath.Substring(1)
+    }
+
+    try
+    {
+
+        $ctx = New-AzStorageContext -StorageAccountName $StorageAccountName
+
+        # Get the folder
+        $folder = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath
+
+        # Upload the file
+        $ret = Set-AzDataLakeGen2Content -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Source $LocalFilePath
+
+        # Write verbose output and return the result
+        Write-Verbose ('Function: Send-FileToDataLake')
+        Write-Verbose "File uploaded: $LocalFilePath"
+        return $ret
+    }
+    catch
+    {
+        # Write any errors to the console
+        Write-Error $_.Exception.Message
+    }
+}
+
+
 Export-ModuleMember -Function *
