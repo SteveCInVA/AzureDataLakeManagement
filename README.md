@@ -10,7 +10,7 @@ To contribute to this project please view the GitHub project at https://github.c
 
 ## Version History:
 
-- 2024.01.1 - 01/09/2024
+- 2024.1.1 - 01/09/2024
 Issue 22 - Fixed issue where a lack of Azure Permissions to Microsoft.Storage/storageAccounts/listKeys/action would cause failure to execute even with correct AzureAD permissions on objects.
 
 - 2023.12.3 - 12/01/2023
