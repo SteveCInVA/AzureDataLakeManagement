@@ -383,7 +383,7 @@ function remove-DataLakeFolder
     }
 
     # Set the context to the Data Lake Storage account
-    $ctx = New-AzStorageContext -StorageAccountName $StorageAccountName -UseConnectedAccount
+    $ctx = New-AzStorageContext -StorageAccountName $StorageAccountName
     if ($null -eq $ctx)
     {
         Write-Error 'Failed to set the Data Lake Storage account context.'
@@ -552,7 +552,7 @@ function set-DataLakeFolderACL
     }
 
     # Set the context to the Data Lake Storage account
-    $ctx = New-AzStorageContext -StorageAccountName $StorageAccountName -UseConnectedAccount
+    $ctx = New-AzStorageContext -StorageAccountName $StorageAccountName
     if ($null -eq $ctx)
     {
         Write-Error 'Failed to set the Data Lake Storage account context.'
@@ -746,16 +746,7 @@ function get-DataLakeFolderACL
 
     try
     {
-        # Get subscription info
-        #REMOVE:#$sub = get-AzureSubscriptionInfo -SubscriptionName $SubscriptionName
-        #REMOVE:# $subId = $sub.SubscriptionId
-
-        # Set the context to the specified subscription
-        #REMOVE:# $subContext = Set-AzContext -Subscription $subId
-
-        # Get the storage account
-        #REMOVE:# $storageAccount = Get-AzStorageAccount -Name $StorageAccountName -ResourceGroup $ResourceGroupName
-        $ctx = New-AzStorageContext -StorageAccountName $StorageAccountName -UseConnectedAccount
+        $ctx = New-AzStorageContext -StorageAccountName $StorageAccountName
 
         # Check if the folder exists
         $folderExists = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath
@@ -959,16 +950,8 @@ function remove-DataLakeFolderACL
 
     try
     {
-        # Get subscription info
-        #REMOVE:# $sub = get-AzureSubscriptionInfo -SubscriptionName $SubscriptionName
-        #REMOVE:# $subId = $sub.SubscriptionId
 
-        # Set the context to the specified subscription
-        #REMOVE:# $subContext = Set-AzContext -Subscription $subId
-
-        # Get the storage account
-        #REMOVE:# $storageAccount = Get-AzStorageAccount -Name $StorageAccountName -ResourceGroup $ResourceGroupName
-        $ctx = New-AzStorageContext -StorageAccountName $StorageAccountName -UseConnectedAccount
+        $ctx = New-AzStorageContext -StorageAccountName $StorageAccountName
 
         # Get the object ID of the identity to use in the ACL
         $identityObj = Get-AADObjectId -Identity $Identity
