@@ -1009,14 +1009,15 @@ function Send-FileToDataLake
         [string]$FolderPath, # Path to the folder in the Data Lake
 
         [Parameter(Mandatory = $true)]
-        [string]$LocalFilePath, # Path to the local file to upload
+        [string]$LocalFilePath, # Local file to upload
 
-        [switch]$AllowFileOverwrite # Flag to indicate if the file should be overwritten if it already exists
+        [switch]$AllowFileOverwrite, # Flag to indicate if the file should be overwritten if it already exists
+
+        [switch]$CreatePathIfNotExists # Flag to indicate if the folder path should be created if it does not exist
     )
 
     # Import necessary modules
-    Import-Module -Name Az.Storage -ErrorAction SilentlyContinue
-    Import-Module -Name AzureAd -ErrorAction SilentlyContinue
+    Import-Module -Name Az.Storage #-ErrorAction SilentlyContinue
 
     # Remove leading slash or backslash from the folder path
     if ($FolderPath.Length -gt 1 -and ($FolderPath.StartsWith('/') -or $FolderPath.StartsWith('\')))
@@ -1024,19 +1025,45 @@ function Send-FileToDataLake
         $FolderPath = $FolderPath.Substring(1)
     }
 
+    # Check if local file exists
+    if (-not (Test-Path $LocalFilePath))
+    {
+        Write-Error "Local file '$LocalFilePath' does not exist."
+        return
+    }
+
     try
     {
+        $ctx = (New-AzStorageContext -StorageAccountName $StorageAccountName).Context
 
-        $ctx = New-AzStorageContext -StorageAccountName $StorageAccountName
+        # check if the folder exists
+        $folderExists = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath -ErrorAction SilentlyContinue
+        if (-not $folderExists)
+        {
+            if ($CreatePathIfNotExists)
+            {
+                # Create the folder
+                $ret = New-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Directory -ErrorAction Stop
+            }
+            else
+            {
+                Write-Error "Folder '$FolderPath' does not exist."
+                return
+            }
+        }
 
-        # Get the folder
-        $folder = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath
+        # test if local file exists
+        if (-not (Test-Path $LocalFilePath))
+        {
+            Write-Error "Local file '$LocalFilePath' does not exist."
+            return
+        }
 
         # Upload the file
-        $ret = Set-AzDataLakeGen2Content -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Source $LocalFilePath
+        #$ret = New-AzDataLakeGen2Content -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Source $LocalFilePath
+        $ret = New-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Source $LocalFilePath -Force -ErrorAction Stop
 
         # Write verbose output and return the result
-        Write-Verbose ('Function: Send-FileToDataLake')
         Write-Verbose "File uploaded: $LocalFilePath"
         return $ret
     }
@@ -1046,6 +1073,5 @@ function Send-FileToDataLake
         Write-Error $_.Exception.Message
     }
 }
-
 
 Export-ModuleMember -Function *
