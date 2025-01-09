@@ -123,7 +123,7 @@ PrivateData = @{
         # RequireLicenseAcceptance = $false
 
         # External dependent modules of this module
-        ExternalModuleDependencies = @("AzureAD", "Az.Storage")
+        # ExternalModuleDependencies = @("AzureAD", "Az.Storage")
 
     } # End of PSData hashtable
 
