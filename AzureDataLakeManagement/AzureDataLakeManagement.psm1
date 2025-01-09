@@ -457,6 +457,9 @@ function remove-DataLakeFolder
 .PARAMETER IncludeDefaultScope
     A switch parameter that specifies whether to include the default scope in the ACL. This parameter is optional.
 
+.PARAMETER DoNotApplyACLRecursively
+    A switch parameter that specifies whether to set the ACL recursively. This parameter is optional.
+
 .EXAMPLE
     PS C:\> set-DataLakeFolderACL -SubscriptionName "MySubscription" -ResourceGroupName "MyResourceGroup" -StorageAccountName "MyStorageAccount" -ContainerName "MyContainer" -FolderPath "/MyFolder" -Identity "MyIdentity" -AccessControlType "Read" -IncludeDefaultScope
     This example sets the ACL for the folder "/MyFolder" in the container "MyContainer" in the storage account "MyStorageAccount" in the resource group "MyResourceGroup" for the identity "MyIdentity" with read access and includes the default scope in the ACL.
@@ -495,7 +498,9 @@ function set-DataLakeFolderACL
 
         [switch]$SetContainerACL,
 
-        [switch]$IncludeDefaultScope
+        [switch]$IncludeDefaultScope,
+
+        [switch]$DoNotApplyACLRecursively
     )
 
     if (-not (Get-Module -Name Az.Storage -ListAvailable))
@@ -636,7 +641,15 @@ function set-DataLakeFolderACL
     {
         $acl = Set-AzDataLakeGen2ItemAclObject -AccessControlType Mask -Permission 'rwx' -InputObject $acl
         $acl = Set-AzDataLakeGen2ItemAclObject -AccessControlType $identityType -EntityId $identityObj.ObjectId -Permission $permission -InputObject $acl
-        $result = Update-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $acl
+        if(-not $DoNotApplyACLRecursively)
+        {
+            $result = Update-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $acl
+        }
+        else
+        {
+            $result = Update-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $acl
+        }
+
     }
     catch [Microsoft.PowerShell.Commands.WriteErrorException]
     {
@@ -663,7 +676,14 @@ function set-DataLakeFolderACL
         Write-Verbose 'include default scope'
         $acl = Set-AzDataLakeGen2ItemAclObject -AccessControlType Mask -Permission 'rwx' -InputObject $acl -DefaultScope
         $acl = Set-AzDataLakeGen2ItemAclObject -AccessControlType $identityType -EntityId $identityObj.ObjectId -Permission $permission -InputObject $acl -DefaultScope
-        $result = Update-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $acl
+        if(-not $DoNotApplyACLRecursively)
+        {
+            $result = Update-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $acl
+        }
+        else
+        {
+            $result = Update-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $acl
+        }
 
         if ($result.FailedEntries.Count -gt 0)
         {
@@ -905,6 +925,9 @@ function move-DataLakeFolder
 .PARAMETER Identity
     The identity to remove from the ACL. This parameter is mandatory.
 
+.PARAMETER DoNotApplyACLRecursively
+    A switch parameter that specifies whether to remove the identity from the ACL recursively. This parameter is optional.
+
 .EXAMPLE
     PS C:\> remove-DataLakeFolderACL -SubscriptionName "MySubscription" -ResourceGroupName "MyResourceGroup" -StorageAccountName "MyStorageAccount" -ContainerName "MyContainer" -Identity "MyIdentity"
     This example removes the identity "MyIdentity" from the ACL of the root of the container "MyContainer" in the storage account "MyStorageAccount" in the resource group "MyResourceGroup" in the Azure subscription "MySubscription".
@@ -935,7 +958,11 @@ function remove-DataLakeFolderACL
         [string]$FolderPath = '/', # Path to the folder in the Data Lake
 
         [Parameter(Mandatory = $true)]
-        [string]$Identity # Identity to remove from the ACL
+        [string]$Identity, # Identity to remove from the ACL
+
+        [Parameter(Mandatory = $false)]
+        [switch]$DoNotApplyACLRecursively # Flag to indicate if the ACL should not be applied recursively
+
     )
 
     # Import necessary modules
@@ -967,7 +994,14 @@ function remove-DataLakeFolderACL
         $newacl = $acls | Where-Object { -not ($_.AccessControlType -eq $identityObj.ObjectType -and $_.EntityId -eq $id) }
 
         # Update the ACL
-        $result = Set-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $newacl
+        if(-not $DoNotApplyACLRecursively)
+        {
+            $result = Update-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $newacl
+        }
+        else
+        {
+            $result = Update-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $newacl
+        }
 
         # Check if the update was successful
         if ($result.FailedEntries.Count -gt 0)
