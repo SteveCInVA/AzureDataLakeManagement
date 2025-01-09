@@ -12,7 +12,7 @@
 RootModule = 'AzureDataLakeManagement.psm1'
 
 # Version number of this module.
-ModuleVersion = '2025.1.1'
+ModuleVersion = '2025.1.2'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -123,7 +123,7 @@ PrivateData = @{
         # RequireLicenseAcceptance = $false
 
         # External dependent modules of this module
-        # ExternalModuleDependencies = @()
+        ExternalModuleDependencies = @("AzureAD", "Az.Storage")
 
     } # End of PSData hashtable
 

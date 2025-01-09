@@ -1,5 +1,8 @@
 {
     "githubPullRequests.remotes": [
         "https://github.com/SteveCInVA/AzureDataLakeManagement.git"
+    ],
+    "cSpell.words": [
+        "pwsh"
     ]
 }

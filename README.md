@@ -10,6 +10,10 @@ To contribute to this project please view the GitHub project at https://github.c
 
 ## Version History:
 
+- 2025.1.2 - 01/09/2025
+Issue 30 - Improved handling of external module dependencies.
+Issue 29 - Resolved code scanning alert
+
 - 2025.1.1 - 01/09/2025
 Issue 27 - Added optional switch to set-DataLakeFolderACL and remove-DataLakeFolderACL functions to enable the user to not recursively apply permissions on children of the path specified.
 
