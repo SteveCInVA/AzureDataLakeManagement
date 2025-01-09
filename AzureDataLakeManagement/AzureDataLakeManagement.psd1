@@ -52,7 +52,9 @@ PowerShellVersion = '5.1'
 
 # Modules that must be imported into the global environment prior to importing this module
 RequiredModules = @(
-    @{ModuleName="AzureAD"; ModuleVersion="2.0.2.140"}
+    @{ModuleName="AzureAD"; ModuleVersion="2.0.2.140"; GUID="d60c0004-962d-4dfb-8d28-5707572ffd00"},
+    @{ModuleName="Az.Storage"; ModuleVersion="5.5.0"; GUID="dfa9e4ea-1407-446d-9111-79122977ab20"},
+    @{ModuleName="Az.Accounts"; ModuleVersion="2.12.1"; GUID="17a2feff-488b-47f9-8729-e2cec094624c"}
 )
 #RequiredModules = @("MyModule", @{ModuleName="MyDependentModule"; ModuleVersion="2.0"; GUID="cfc45206-1e49-459d-a8ad-5b571ef94857"})
 
@@ -122,7 +124,7 @@ PrivateData = @{
         # RequireLicenseAcceptance = $false
 
         # External dependent modules of this module
-        ExternalModuleDependencies = @("AzureAD", "Az.Storage")
+        #ExternalModuleDependencies = @("AzureAD", "Az.Storage")
 
     } # End of PSData hashtable
 
