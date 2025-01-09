@@ -52,9 +52,7 @@ PowerShellVersion = '5.1'
 
 # Modules that must be imported into the global environment prior to importing this module
 RequiredModules = @(
-    @{ModuleName="AzureAD"; ModuleVersion="2.0.2.140"},
-    @{ModuleName="Az.Storage"; ModuleVersion="5.5.0"},
-    @{ModuleName="Az.Accounts"; ModuleVersion="2.12.1"}
+    @{ModuleName="AzureAD"; ModuleVersion="2.0.2.140"}
 )
 #RequiredModules = @("MyModule", @{ModuleName="MyDependentModule"; ModuleVersion="2.0"; GUID="cfc45206-1e49-459d-a8ad-5b571ef94857"})
 
