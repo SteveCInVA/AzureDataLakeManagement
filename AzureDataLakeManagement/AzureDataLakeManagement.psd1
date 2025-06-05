@@ -15,7 +15,7 @@ RootModule = 'AzureDataLakeManagement.psm1'
 ModuleVersion = '2025.1.1'
 
 # Supported PSEditions
-# CompatiblePSEditions = @()
+CompatiblePSEditions = @('Desktop', 'Core')
 
 # ID used to uniquely identify this module
 GUID = 'b0b0b0b0-b0b0-b0b0-b0b0-b0b0b0b0b0b0'
@@ -51,7 +51,7 @@ PowerShellVersion = '5.1'
 # ProcessorArchitecture = ''
 
 # Modules that must be imported into the global environment prior to importing this module
-# RequiredModules = @()
+RequiredModules = @('Az.Storage', 'AzureAD', 'Az.Accounts')
 
 # Assemblies that must be loaded prior to importing this module
 # RequiredAssemblies = @()
@@ -69,10 +69,10 @@ PowerShellVersion = '5.1'
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = 'Get-AADObjectId', 'get-AzureSubscriptionInfo', 'add-DataLakeFolder',
-               'remove-DataLakeFolder', 'set-DataLakeFolderACL',
-               'get-DataLakeFolderACL', 'move-DataLakeFolder',
-               'remove-DataLakeFolderACL'
+FunctionsToExport = 'Get-AADObjectId', 'Get-AzureSubscriptionInfo', 'Add-DataLakeFolder',
+               'Remove-DataLakeFolder', 'Set-DataLakeFolderACL',
+               'Get-DataLakeFolderACL', 'Move-DataLakeFolder',
+               'Remove-DataLakeFolderACL'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()
@@ -126,7 +126,7 @@ PrivateData = @{
  } # End of PrivateData hashtable
 
 # HelpInfo URI of this module
-# HelpInfoURI = ''
+HelpInfoURI = 'https://github.com/SteveCInVA/AzureDataLakeManagement/blob/main/README.md'
 
 # Default prefix for commands exported from this module. Override the default prefix using Import-Module -Prefix.
 # DefaultCommandPrefix = ''
