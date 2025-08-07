@@ -1,3 +1,213 @@
+#region Dependency Management Functions
+
+<#
+.SYNOPSIS
+    Tests if required modules are available and optionally installs them.
+
+.DESCRIPTION
+    The Test-ModuleDependencies function checks if the required modules for AzureDataLakeManagement are available.
+    It can optionally install missing modules and provides user feedback about the dependency status.
+
+.PARAMETER AutoInstall
+    If specified, automatically installs missing required modules from PowerShell Gallery.
+
+.PARAMETER Quiet
+    If specified, suppresses informational output and only shows errors.
+
+.EXAMPLE
+    PS C:\> Test-ModuleDependencies
+    Checks for required modules and displays status information.
+
+.EXAMPLE
+    PS C:\> Test-ModuleDependencies -AutoInstall
+    Checks for required modules and automatically installs any that are missing.
+
+.NOTES
+    Required modules: Az.Storage, AzureAD, Az.Accounts
+    Author: Stephen Carroll - Microsoft
+    Date:   2025-01-09
+#>
+function Test-ModuleDependencies {
+    [CmdletBinding()]
+    param(
+        [switch]$AutoInstall,
+        [switch]$Quiet
+    )
+    
+    $requiredModules = @('Az.Storage', 'AzureAD', 'Az.Accounts')
+    $missingModules = @()
+    $availableModules = @()
+    
+    if (-not $Quiet) {
+        Write-Host "Checking AzureDataLakeManagement module dependencies..." -ForegroundColor Yellow
+    }
+    
+    foreach ($moduleName in $requiredModules) {
+        $module = Get-Module -Name $moduleName -ListAvailable -ErrorAction SilentlyContinue
+        if ($null -eq $module) {
+            $missingModules += $moduleName
+            if (-not $Quiet) {
+                Write-Warning "Missing required module: $moduleName"
+            }
+        } else {
+            $availableModules += $moduleName
+            if (-not $Quiet) {
+                Write-Host "✓ Found module: $moduleName (Version: $($module[0].Version))" -ForegroundColor Green
+            }
+        }
+    }
+    
+    if ($missingModules.Count -eq 0) {
+        if (-not $Quiet) {
+            Write-Host "✓ All required modules are available." -ForegroundColor Green
+        }
+        return $true
+    }
+    
+    if ($AutoInstall) {
+        if (-not $Quiet) {
+            Write-Host "Installing missing modules..." -ForegroundColor Yellow
+        }
+        return Install-ModuleDependencies -Modules $missingModules -Quiet:$Quiet
+    } else {
+        if (-not $Quiet) {
+            Write-Host "`nTo install missing modules, run:" -ForegroundColor Cyan
+            Write-Host "Test-ModuleDependencies -AutoInstall" -ForegroundColor White
+            Write-Host "`nOr install manually:" -ForegroundColor Cyan
+            foreach ($module in $missingModules) {
+                Write-Host "Install-Module -Name $module -Force" -ForegroundColor White
+            }
+        }
+        return $false
+    }
+}
+
+<#
+.SYNOPSIS
+    Installs required modules for AzureDataLakeManagement.
+
+.DESCRIPTION
+    The Install-ModuleDependencies function installs the specified required modules from PowerShell Gallery.
+
+.PARAMETER Modules
+    Array of module names to install. If not specified, installs all required modules.
+
+.PARAMETER Quiet
+    If specified, suppresses informational output and only shows errors.
+
+.EXAMPLE
+    PS C:\> Install-ModuleDependencies
+    Installs all required modules for AzureDataLakeManagement.
+
+.EXAMPLE
+    PS C:\> Install-ModuleDependencies -Modules @('Az.Storage')
+    Installs only the Az.Storage module.
+
+.NOTES
+    Author: Stephen Carroll - Microsoft
+    Date:   2025-01-09
+#>
+function Install-ModuleDependencies {
+    [CmdletBinding()]
+    param(
+        [string[]]$Modules = @('Az.Storage', 'AzureAD', 'Az.Accounts'),
+        [switch]$Quiet
+    )
+    
+    $successCount = 0
+    $failureCount = 0
+    
+    foreach ($moduleName in $Modules) {
+        try {
+            if (-not $Quiet) {
+                Write-Host "Installing module: $moduleName..." -ForegroundColor Yellow
+            }
+            
+            Install-Module -Name $moduleName -Force -Scope CurrentUser -AllowClobber -ErrorAction Stop
+            
+            if (-not $Quiet) {
+                Write-Host "✓ Successfully installed: $moduleName" -ForegroundColor Green
+            }
+            $successCount++
+        }
+        catch {
+            Write-Error "Failed to install module $moduleName`: $($_.Exception.Message)"
+            $failureCount++
+        }
+    }
+    
+    if (-not $Quiet) {
+        if ($failureCount -eq 0) {
+            Write-Host "✓ All modules installed successfully." -ForegroundColor Green
+        } else {
+            Write-Warning "Installed $successCount modules, failed to install $failureCount modules."
+        }
+    }
+    
+    return ($failureCount -eq 0)
+}
+
+<#
+.SYNOPSIS
+    Imports required modules with proper error handling.
+
+.DESCRIPTION
+    The Import-ModuleDependencies function imports the required modules for AzureDataLakeManagement functions.
+    It provides better error handling and user feedback compared to individual Import-Module calls.
+
+.PARAMETER RequiredModules
+    Array of module names to import. Defaults to the core required modules.
+
+.PARAMETER Quiet
+    If specified, suppresses informational output and only shows errors.
+
+.EXAMPLE
+    PS C:\> Import-ModuleDependencies
+    Imports all required modules for AzureDataLakeManagement.
+
+.NOTES
+    Author: Stephen Carroll - Microsoft
+    Date:   2025-01-09
+#>
+function Import-ModuleDependencies {
+    [CmdletBinding()]
+    param(
+        [string[]]$RequiredModules = @('Az.Storage', 'AzureAD', 'Az.Accounts'),
+        [switch]$Quiet
+    )
+    
+    $importFailures = @()
+    
+    foreach ($moduleName in $RequiredModules) {
+        try {
+            $module = Get-Module -Name $moduleName -ListAvailable -ErrorAction SilentlyContinue
+            if ($null -eq $module) {
+                $importFailures += $moduleName
+                Write-Error "Module $moduleName is not available. Please install it first."
+                continue
+            }
+            
+            Import-Module -Name $moduleName -ErrorAction Stop -Force
+            if (-not $Quiet) {
+                Write-Verbose "Successfully imported module: $moduleName"
+            }
+        }
+        catch {
+            $importFailures += $moduleName
+            Write-Error "Failed to import module $moduleName`: $($_.Exception.Message)"
+        }
+    }
+    
+    if ($importFailures.Count -gt 0) {
+        Write-Error "Failed to import modules: $($importFailures -join ', '). Some functions may not work correctly."
+        return $false
+    }
+    
+    return $true
+}
+
+#endregion
+
 <#
 .SYNOPSIS
     This function retrieves the object ID, object type, and display name for a specified Azure AD user, group, or service principal.
@@ -253,10 +463,10 @@ function Add-DataLakeFolder
         return
     }
 
-    # Check if the Az.Storage module is installed
-    if (-not (Get-Module -Name Az.Storage -ListAvailable))
-    {
-        Import-Module -Name Az.Storage  # Install the Az.Storage module if it's not installed
+    # Check if the Az.Storage module is available and import it
+    if (-not (Import-ModuleDependencies -RequiredModules @('Az.Storage') -Quiet)) {
+        Write-Error 'Required module Az.Storage is not available. Run Test-ModuleDependencies -AutoInstall to install missing dependencies.'
+        return
     }
 
     # Get the Data Lake Storage account
@@ -503,10 +713,10 @@ function Set-DataLakeFolderACL
         [switch]$DoNotApplyACLRecursively
     )
 
-    if (-not (Get-Module -Name Az.Storage -ListAvailable))
-    {
-        Write-Verbose 'Installing Az.Storage module.'
-        Import-Module -Name Az.Storage
+    # Check if required modules are available and import them
+    if (-not (Import-ModuleDependencies -RequiredModules @('Az.Storage', 'AzureAD') -Quiet)) {
+        Write-Error 'Required modules are not available. Run Test-ModuleDependencies -AutoInstall to install missing dependencies.'
+        return
     }
 
     $sub = Get-AzureSubscriptionInfo -SubscriptionName $SubscriptionName
@@ -754,9 +964,11 @@ function Get-DataLakeFolderACL
         [string]$FolderPath = '/' # Path to the folder in the Data Lake
     )
 
-    # Import necessary modules
-    Import-Module -Name Az.Storage -ErrorAction SilentlyContinue
-    Import-Module -Name AzureAd -ErrorAction SilentlyContinue
+    # Check if required modules are available and import them
+    if (-not (Import-ModuleDependencies -RequiredModules @('Az.Storage', 'AzureAD') -Quiet)) {
+        Write-Error 'Required modules are not available. Run Test-ModuleDependencies -AutoInstall to install missing dependencies.'
+        return
+    }
 
     # Remove leading slash or backslash from the folder path
     if ($FolderPath.Length -gt 1 -and ($FolderPath.StartsWith('/') -or $FolderPath.StartsWith('\')))
@@ -867,9 +1079,11 @@ function Move-DataLakeFolder
         [string]$DestinationFolderPath # Destination folder path
     )
 
-    # Import necessary modules
-    Import-Module -Name Az.Storage -ErrorAction SilentlyContinue
-    Import-Module -Name AzureAd -ErrorAction SilentlyContinue
+    # Check if required modules are available and import them
+    if (-not (Import-ModuleDependencies -RequiredModules @('Az.Storage', 'AzureAD') -Quiet)) {
+        Write-Error 'Required modules are not available. Run Test-ModuleDependencies -AutoInstall to install missing dependencies.'
+        return
+    }
 
     try
     {
@@ -965,9 +1179,11 @@ function Remove-DataLakeFolderACL
 
     )
 
-    # Import necessary modules
-    Import-Module -Name Az.Storage -ErrorAction SilentlyContinue
-    Import-Module -Name AzureAd -ErrorAction SilentlyContinue
+    # Check if required modules are available and import them
+    if (-not (Import-ModuleDependencies -RequiredModules @('Az.Storage', 'AzureAD') -Quiet)) {
+        Write-Error 'Required modules are not available. Run Test-ModuleDependencies -AutoInstall to install missing dependencies.'
+        return
+    }
 
     # Remove leading slash or backslash from the folder path
     if ($FolderPath.Length -gt 1 -and ($FolderPath.StartsWith('/') -or $FolderPath.StartsWith('\')))
@@ -1022,5 +1238,19 @@ function Remove-DataLakeFolderACL
         Write-Error $_.Exception.Message
     }
 }
+
+#region Module Initialization
+# This code runs when the module is imported
+# Check dependencies on module import
+$dependencyCheckResult = Test-ModuleDependencies -Quiet
+
+if (-not $dependencyCheckResult) {
+    Write-Warning @"
+AzureDataLakeManagement module loaded with missing dependencies.
+Some functions may not work correctly until required modules are installed.
+Run 'Test-ModuleDependencies -AutoInstall' to install missing dependencies automatically.
+"@
+}
+#endregion
 
 Export-ModuleMember -Function *

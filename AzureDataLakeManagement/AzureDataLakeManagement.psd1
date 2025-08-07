@@ -51,7 +51,7 @@ PowerShellVersion = '5.1'
 # ProcessorArchitecture = ''
 
 # Modules that must be imported into the global environment prior to importing this module
-RequiredModules = @('Az.Storage', 'AzureAD', 'Az.Accounts')
+# RequiredModules = @('Az.Storage', 'AzureAD', 'Az.Accounts')
 
 # Assemblies that must be loaded prior to importing this module
 # RequiredAssemblies = @()
@@ -72,7 +72,8 @@ RequiredModules = @('Az.Storage', 'AzureAD', 'Az.Accounts')
 FunctionsToExport = 'Get-AADObjectId', 'Get-AzureSubscriptionInfo', 'Add-DataLakeFolder',
                'Remove-DataLakeFolder', 'Set-DataLakeFolderACL',
                'Get-DataLakeFolderACL', 'Move-DataLakeFolder',
-               'Remove-DataLakeFolderACL'
+               'Remove-DataLakeFolderACL', 'Test-ModuleDependencies',
+               'Install-ModuleDependencies', 'Import-ModuleDependencies'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()
@@ -119,7 +120,7 @@ PrivateData = @{
         # RequireLicenseAcceptance = $false
 
         # External dependent modules of this module
-        # ExternalModuleDependencies = @()
+        ExternalModuleDependencies = @('Az.Storage', 'AzureAD', 'Az.Accounts')
 
     } # End of PSData hashtable
 
