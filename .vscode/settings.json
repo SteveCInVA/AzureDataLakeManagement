@@ -1,5 +1,6 @@
 {
     "githubPullRequests.remotes": [
         "https://github.com/SteveCInVA/AzureDataLakeManagement.git"
-    ]
+    ],
+    "powershell.pester.codeLens": false
 }

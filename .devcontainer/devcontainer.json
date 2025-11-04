@@ -1,0 +1,46 @@
+{
+	"name": "Azure Data Lake Management PowerShell",
+	"image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+	
+	// Features to install - PowerShell is a predefined feature
+	"features": {
+		"ghcr.io/devcontainers/features/powershell:1": {
+			"version": "latest"
+		}
+	},
+
+	// Configure tool-specific properties
+	"customizations": {
+		"vscode": {
+			// Set *default* container specific settings.json values on container create
+			"settings": {
+				"terminal.integrated.defaultProfile.linux": "pwsh",
+				"powershell.powerShellDefaultVersion": "PowerShell (latest)",
+				"githubPullRequests.remotes": [
+					"https://github.com/SteveCInVA/AzureDataLakeManagement.git"
+				]
+			},
+			
+			// Add the IDs of extensions you want installed when the container is created
+			"extensions": [
+				"ms-vscode.powershell",
+				"pspester.pester-test",
+				"github.copilot",
+				"github.vscode-github-actions",
+				"jgclark.vscode-todo-highlight"
+			]
+		}
+	},
+
+	// Use 'postCreateCommand' to run commands after the container is created
+	"postCreateCommand": "pwsh -Command 'Install-Module -Name PSScriptAnalyzer, Pester -Force -Scope CurrentUser -SkipPublisherCheck'"
+
+	// Use 'forwardPorts' to make a list of ports inside the container available locally
+	// "forwardPorts": [],
+
+	// Use 'postStartCommand' to run commands each time the container starts
+	// "postStartCommand": ""
+
+	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root
+	// "remoteUser": "root"
+}

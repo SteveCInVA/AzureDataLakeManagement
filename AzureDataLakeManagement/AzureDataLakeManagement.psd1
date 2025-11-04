@@ -12,7 +12,7 @@
 RootModule = 'AzureDataLakeManagement.psm1'
 
 # Version number of this module.
-ModuleVersion = '2025.1.1'
+ModuleVersion = '2025.11.1'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Desktop', 'Core')
@@ -33,7 +33,7 @@ Copyright = '(c) 2023 Microsoft Corporation. All rights reserved.'
 Description = 'Azure Data Lake Management Module'
 
 # Minimum version of the Windows PowerShell engine required by this module
-PowerShellVersion = '5.1'
+PowerShellVersion = '7.0'
 
 # Name of the Windows PowerShell host required by this module
 # PowerShellHostName = ''
