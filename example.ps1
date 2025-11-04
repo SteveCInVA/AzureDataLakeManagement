@@ -1,6 +1,6 @@
 import-module AzureDatalakeManagement
 
-Connect-AzAccount
+Connect-AzAccount -UseDeviceAuthentication
 Connect-AzureAd
 
 $subName = '<subscriptionName>'

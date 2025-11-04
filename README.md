@@ -6,6 +6,32 @@ My goal, is to make a straight forward set of functions that will assist a user 
 
 To contribute to this project please view the GitHub project at https://github.com/SteveCInVA/AzureDataLakeManagement
 
+## Module Usage
+
+- For example usage see: [example.ps1](example.ps1)
+- For module installation support see:  [example-dependency-management.ps1](example-dependency-management.ps1)
+
+## Functions Supported:
+
+### Folder Management
+- Add-DataLakeFolder
+- Move-DataLakeFolder
+- Remove-DataLakeFolder
+
+### ACL Management
+- Get-DataLakeFolderACL
+- Set-DataLakeFolderACL
+- Remove-DataLakeFolderACL
+
+### Support Functions
+- Get-AADObjectId
+- Get-AzureSubscriptionInfo
+
+### Module Installation Support
+- Import-ModuleDependencies
+- Install-ModuleDependencies
+- Test-ModuleDependencies
+
 ## Development Environment
 
 ### Using Dev Containers (Recommended)
@@ -103,6 +129,9 @@ Functions now provide clearer error messages when dependencies are missing, guid
 ***
 
 ## Version History:
+
+- 2025.11.1 - 11/04/2025 
+Issue 34 - Added support for Visual Studio Code - Dev Containers to improve development / testing for solution.  Improved documentation.
 
 - 2025.1.1 - 01/09/2025
 Issue 27 - Added optional switch to set-DataLakeFolderACL and remove-DataLakeFolderACL functions to enable the user to not recursively apply permissions on children of the path specified.
