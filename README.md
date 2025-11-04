@@ -6,6 +6,49 @@ My goal, is to make a straight forward set of functions that will assist a user 
 
 To contribute to this project please view the GitHub project at https://github.com/SteveCInVA/AzureDataLakeManagement
 
+## Development Environment
+
+### Using Dev Containers (Recommended)
+
+This repository includes support for Visual Studio Code dev containers, providing a consistent development environment with all required tools pre-installed.
+
+#### Prerequisites
+- [Visual Studio Code](https://code.visualstudio.com/)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop)
+- [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) for VS Code
+
+#### Getting Started with Dev Containers
+1. Clone the repository
+2. Open the repository folder in Visual Studio Code
+3. When prompted, click "Reopen in Container" (or use Command Palette: `Dev Containers: Reopen in Container`)
+4. VS Code will build the container and install all dependencies automatically
+
+#### What's Included
+The dev container includes:
+- **PowerShell 7+** - Latest version installed automatically
+- **Pre-installed VS Code Extensions:**
+  - PowerShell - Language support and debugging
+  - Pester Test - Testing framework support
+  - GitHub Copilot - AI-powered code assistance
+  - GitHub Actions - Workflow file support
+  - TODO Highlight v2 - Highlight TODO comments
+- **PowerShell Modules:**
+  - PSScriptAnalyzer - For code quality checks
+  - Pester - For testing
+
+#### Working in the Dev Container
+Once the container is running, you can:
+- Import the module: `Import-Module ./AzureDataLakeManagement/AzureDataLakeManagement.psm1 -Force`
+- Run code quality checks: `Invoke-ScriptAnalyzer -Path ./AzureDataLakeManagement/AzureDataLakeManagement.psm1`
+- Test the module: `Test-ModuleManifest ./AzureDataLakeManagement/AzureDataLakeManagement.psd1`
+- Run Pester tests: `Invoke-Pester -Path ./Tests`
+
+### Local Development (Without Dev Containers)
+
+If you prefer to develop locally without containers, ensure you have:
+- PowerShell 7+ installed
+- Required PowerShell modules (see Dependency Management section below)
+
 ## Dependency Management
 
 Starting with version 2025.1.1, the module includes improved dependency management features:
