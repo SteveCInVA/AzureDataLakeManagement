@@ -23,7 +23,7 @@
     Checks for required modules and automatically installs any that are missing.
 
 .NOTES
-    Required modules: Az.Storage, Microsoft.Graph.Users, Microsoft.Graph.Groups, Az.Accounts
+    Required modules: Az.Storage, Microsoft.Graph.Users, Microsoft.Graph.Groups, Microsoft.Graph.DirectoryObjects, Microsoft.Graph.Applications
     Author: Stephen Carroll - Microsoft
     Date:   2025-01-09
 #>
@@ -33,8 +33,8 @@ function Test-ModuleDependencies {
         [switch]$AutoInstall,
         [switch]$Quiet
     )
-    
-    $requiredModules = @('Az.Storage', 'Microsoft.Graph.Users', 'Microsoft.Graph.Groups', 'Az.Accounts')
+
+    $requiredModules = @('Az.Storage', 'Microsoft.Graph.Applications', 'Microsoft.Graph.Users', 'Microsoft.Graph.Groups', 'Microsoft.Graph.DirectoryObjects')
     $missingModules = @()
     $availableModules = @()
     
@@ -110,7 +110,7 @@ function Test-ModuleDependencies {
 function Install-ModuleDependencies {
     [CmdletBinding()]
     param(
-        [string[]]$Modules = @('Az.Storage', 'Microsoft.Graph.Users', 'Microsoft.Graph.Groups', 'Az.Accounts'),
+        [string[]]$Modules = @('Az.Storage', 'Microsoft.Graph.Applications', 'Microsoft.Graph.Users', 'Microsoft.Graph.Groups', 'Microsoft.Graph.DirectoryObjects'),
         [switch]$Quiet
     )
     
@@ -172,7 +172,7 @@ function Install-ModuleDependencies {
 function Import-ModuleDependencies {
     [CmdletBinding()]
     param(
-        [string[]]$RequiredModules = @('Az.Storage', 'Microsoft.Graph.Users', 'Microsoft.Graph.Groups', 'Az.Accounts'),
+        [string[]]$RequiredModules = @('Az.Storage', 'Microsoft.Graph.Applications', 'Microsoft.Graph.Users', 'Microsoft.Graph.Groups', 'Microsoft.Graph.DirectoryObjects'),
         [switch]$Quiet
     )
     
@@ -721,7 +721,7 @@ function Set-DataLakeFolderACL
     )
 
     # Check if required modules are available and import them
-    if (-not (Import-ModuleDependencies -RequiredModules @('Az.Storage', 'Microsoft.Graph.Users', 'Microsoft.Graph.Groups') -Quiet)) {
+    if (-not (Import-ModuleDependencies -RequiredModules @('Az.Storage', 'Microsoft.Graph.Applications', 'Microsoft.Graph.Users', 'Microsoft.Graph.Groups', 'Microsoft.Graph.DirectoryObjects') -Quiet)) {
         Write-Error 'Required modules are not available. Run Test-ModuleDependencies -AutoInstall to install missing dependencies.'
         return
     }
@@ -973,7 +973,7 @@ function Get-DataLakeFolderACL
     )
 
     # Check if required modules are available and import them
-    if (-not (Import-ModuleDependencies -RequiredModules @('Az.Storage', 'Microsoft.Graph.Users', 'Microsoft.Graph.Groups') -Quiet)) {
+    if (-not (Import-ModuleDependencies -RequiredModules @('Az.Storage', 'Microsoft.Graph.Applications', 'Microsoft.Graph.Users', 'Microsoft.Graph.Groups', 'Microsoft.Graph.DirectoryObjects') -Quiet)) {
         Write-Error 'Required modules are not available. Run Test-ModuleDependencies -AutoInstall to install missing dependencies.'
         return
     }
@@ -1008,12 +1008,11 @@ function Get-DataLakeFolderACL
                 
                 if ($adObject) {
                     # Try to get DisplayName from the object properties first, then from AdditionalProperties
-                    if ($adObject.PSObject.Properties.Name -contains 'DisplayName') {
+                    if ($adObject.PSObject.Properties.Name -contains 'displayName') {
                         $displayName = $adObject.DisplayName
                     } elseif ($adObject.AdditionalProperties.ContainsKey('displayName')) {
                         $displayName = $adObject.AdditionalProperties['displayName']
                     }
-                    
                     # Extract object type from odata.type
                     if ($adObject.AdditionalProperties.ContainsKey('@odata.type')) {
                         $objectType = $adObject.AdditionalProperties['@odata.type'] -replace '#microsoft.graph.', ''
@@ -1208,7 +1207,7 @@ function Remove-DataLakeFolderACL
     )
 
     # Check if required modules are available and import them
-    if (-not (Import-ModuleDependencies -RequiredModules @('Az.Storage', 'Microsoft.Graph.Users', 'Microsoft.Graph.Groups') -Quiet)) {
+    if (-not (Import-ModuleDependencies -RequiredModules @('Az.Storage', 'Microsoft.Graph.Applications', 'Microsoft.Graph.Users', 'Microsoft.Graph.Groups', 'Microsoft.Graph.DirectoryObjects') -Quiet)) {
         Write-Error 'Required modules are not available. Run Test-ModuleDependencies -AutoInstall to install missing dependencies.'
         return
     }

@@ -120,7 +120,7 @@ PrivateData = @{
         # RequireLicenseAcceptance = $false
 
         # External dependent modules of this module
-        ExternalModuleDependencies = @('Az.Storage', 'Microsoft.Graph.Users', 'Microsoft.Graph.Groups', 'Az.Accounts')
+        ExternalModuleDependencies = @('Az.Storage', 'Microsoft.Graph.Applications',  'Microsoft.Graph.Users', 'Microsoft.Graph.Groups', 'Microsoft.Graph.DirectoryObjects')
 
     } # End of PSData hashtable
 

@@ -18,15 +18,18 @@ Version 2025.11.2 of the AzureDataLakeManagement module migrates from the deprec
 - Az.Storage
 - AzureAD
 - Az.Accounts
+
 ```
 
 **After (v2025.11.2 and later):**
 ```powershell
 # Required modules
 - Az.Storage
+- Microsoft.Graph.Applications
 - Microsoft.Graph.Users
 - Microsoft.Graph.Groups
-- Az.Accounts
+- Microsoft.Graph.DirectoryObjects
+
 ```
 
 ### Authentication
@@ -50,8 +53,10 @@ Connect-MgGraph -Scopes "User.Read.All", "Group.Read.All", "Application.Read.All
 Uninstall-Module -Name AzureAD
 
 # Install Microsoft Graph modules
+Install-Module -Name Microsoft.Graph.Applications -Force
 Install-Module -Name Microsoft.Graph.Users -Force
 Install-Module -Name Microsoft.Graph.Groups -Force
+Install-Module -Name Microsoft.Graph.DirectoryObjects -Force
 
 # Or use the module's built-in dependency management
 Import-Module AzureDataLakeManagement

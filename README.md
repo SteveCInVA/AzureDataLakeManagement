@@ -82,9 +82,11 @@ Starting with version 2025.1.1, the module includes improved dependency manageme
 ### Required Dependencies
 The module requires the following PowerShell modules:
 - `Az.Storage` - For Azure Storage operations
+- `Microsoft.Graph.Applications` - For Microsoft Graph application operations (replaces AzureAD)
 - `Microsoft.Graph.Users` - For Microsoft Graph user operations (replaces AzureAD)
 - `Microsoft.Graph.Groups` - For Microsoft Graph group operations (replaces AzureAD)
-- `Az.Accounts` - For Azure authentication
+- `Microsoft.Graph.DirectoryObjects` - For Microsoft Graph directory objects (replaces AzureAD)
+
 
 **Important**: The legacy `AzureAD` module is no longer supported as it is incompatible with PowerShell 7+ and has been deprecated by Microsoft. This module now uses the Microsoft Graph PowerShell SDK.
 
@@ -122,16 +124,17 @@ Install-ModuleDependencies -Modules @('Az.Storage')
 You can also install dependencies manually:
 ```powershell
 Install-Module -Name Az.Storage -Force
+Install-Module -Name Microsoft.Graph.Applications -Force
 Install-Module -Name Microsoft.Graph.Users -Force
 Install-Module -Name Microsoft.Graph.Groups -Force
-Install-Module -Name Az.Accounts -Force
+Install-Module -Name Microsoft.Graph.DirectoryObjects -Force
 ```
 
 ### Authentication
 Connect to both Azure and Microsoft Graph:
 ```powershell
 # Connect to Azure
-Connect-AzAccount
+Connect-AzAccount -UseDeviceAuthentication
 
 # Connect to Microsoft Graph (replaces Connect-AzureAD)
 Connect-MgGraph -Scopes "User.Read.All", "Group.Read.All", "Application.Read.All"
@@ -146,7 +149,7 @@ Functions now provide clearer error messages when dependencies are missing, guid
 
 - 2025.11.2 - 01/04/2025
 **BREAKING CHANGE**: Migrated from deprecated AzureAD module to Microsoft.Graph PowerShell SDK for PowerShell 7+ compatibility.
-  - Replaced `AzureAD` dependency with `Microsoft.Graph.Users` and `Microsoft.Graph.Groups`
+  - Replaced `AzureAD` dependency with `Microsoft.Graph.Applications`, `Microsoft.Graph.Users`, `Microsoft.Graph.Groups` and `Microsoft.Graph.DirectoryObjects`
   - Updated `Get-AADObjectId` to use Microsoft Graph cmdlets (`Get-MgUser`, `Get-MgGroup`, `Get-MgServicePrincipal`)
   - Updated `Get-DataLakeFolderACL` to use `Get-MgDirectoryObject`
   - Updated authentication from `Connect-AzureAD` to `Connect-MgGraph`

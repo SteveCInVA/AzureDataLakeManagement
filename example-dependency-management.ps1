@@ -11,8 +11,10 @@ Test-ModuleDependencies
 
 # Or install them manually:
 # Install-Module -Name Az.Storage -Force
-# Install-Module -Name AzureAD -Force  
-# Install-Module -Name Az.Accounts -Force
+# Install-Module -Name Microsoft.Graph.Applications -Force
+# Install-Module -Name Microsoft.Graph.Users -Force
+# Install-Module -Name Microsoft.Graph.Groups -Force
+# Install-Module -Name Microsoft.Graph.DirectoryObjects -Force
 
 # The module will now provide better error messages when functions are called without required dependencies
 # For example:
