@@ -23,7 +23,7 @@
     Checks for required modules and automatically installs any that are missing.
 
 .NOTES
-    Required modules: Az.Storage, AzureAD, Az.Accounts
+    Required modules: Az.Storage, Microsoft.Graph.Users, Microsoft.Graph.Groups, Az.Accounts
     Author: Stephen Carroll - Microsoft
     Date:   2025-01-09
 #>
@@ -34,7 +34,7 @@ function Test-ModuleDependencies {
         [switch]$Quiet
     )
     
-    $requiredModules = @('Az.Storage', 'AzureAD', 'Az.Accounts')
+    $requiredModules = @('Az.Storage', 'Microsoft.Graph.Users', 'Microsoft.Graph.Groups', 'Az.Accounts')
     $missingModules = @()
     $availableModules = @()
     
@@ -110,7 +110,7 @@ function Test-ModuleDependencies {
 function Install-ModuleDependencies {
     [CmdletBinding()]
     param(
-        [string[]]$Modules = @('Az.Storage', 'AzureAD', 'Az.Accounts'),
+        [string[]]$Modules = @('Az.Storage', 'Microsoft.Graph.Users', 'Microsoft.Graph.Groups', 'Az.Accounts'),
         [switch]$Quiet
     )
     
@@ -172,7 +172,7 @@ function Install-ModuleDependencies {
 function Import-ModuleDependencies {
     [CmdletBinding()]
     param(
-        [string[]]$RequiredModules = @('Az.Storage', 'AzureAD', 'Az.Accounts'),
+        [string[]]$RequiredModules = @('Az.Storage', 'Microsoft.Graph.Users', 'Microsoft.Graph.Groups', 'Az.Accounts'),
         [switch]$Quiet
     )
     
@@ -213,7 +213,7 @@ function Import-ModuleDependencies {
     This function retrieves the object ID, object type, and display name for a specified Azure AD user, group, or service principal.
 
 .DESCRIPTION
-    Get-AADObjectId is a function that takes an identity as a parameter and returns the object ID, object type, and display name of the corresponding Azure AD user, group, or service principal. It requires an active connection to Azure AD.
+    Get-AADObjectId is a function that takes an identity as a parameter and returns the object ID, object type, and display name of the corresponding Azure AD user, group, or service principal. It requires an active connection to Microsoft Graph.
 
 .PARAMETER Identity
     The Identity parameter specifies the user principal name, group display name, or service principal display name of the object to retrieve. This parameter is mandatory.
@@ -235,10 +235,11 @@ function Import-ModuleDependencies {
     This example retrieves the object ID, object type, and display name for the Azure AD group with the display name "HR Group".
 
 .NOTES
-    This function requires an active connection to Azure AD using Connect-AzureAD. If the specified identity does not exist, the function will return an error message.
+    This function requires an active connection to Microsoft Graph using Connect-MgGraph. If the specified identity does not exist, the function will return an error message.
 
     Author: Stephen Carroll - Microsoft
     Date:   2021-08-31
+    Updated: 2025-01-09 - Migrated from AzureAD to Microsoft.Graph for PowerShell 7+ compatibility
 #>
 function Get-AADObjectId
 {
@@ -249,7 +250,7 @@ function Get-AADObjectId
         [string]$Identity
     )
 
-    # Replacing single quotes in the identity with double single quotes
+    # Replacing single quotes in the identity with double single quotes for filter syntax
     $Identity = $Identity.Replace("'", "''")
 
     try
@@ -259,14 +260,15 @@ function Get-AADObjectId
         $group = $null
         $sp = $null
 
-        # Try to get the user, group, and service principal in one go
-        $user = Get-AzureADUser -Filter "UserPrincipalName eq '$Identity'" -ErrorAction SilentlyContinue
+        # Try to get the user, group, and service principal
+        # Using Microsoft Graph cmdlets instead of AzureAD
+        $user = Get-MgUser -Filter "UserPrincipalName eq '$Identity'" -ErrorAction SilentlyContinue
         if ($null -eq $user)
         {
-            $group = Get-AzureADGroup -Filter "DisplayName eq '$Identity'" -ErrorAction SilentlyContinue
+            $group = Get-MgGroup -Filter "DisplayName eq '$Identity'" -ErrorAction SilentlyContinue
             if ($null -eq $group)
             {
-                $sp = Get-AzureADServicePrincipal -Filter "DisplayName eq '$Identity'" -ErrorAction SilentlyContinue
+                $sp = Get-MgServicePrincipal -Filter "DisplayName eq '$Identity'" -ErrorAction SilentlyContinue
             }
         }
 
@@ -274,19 +276,19 @@ function Get-AADObjectId
         if ($null -ne $user)
         {
             $objectType = 'User'
-            $objectId = $user.ObjectId
+            $objectId = $user.Id
             $displayName = $user.DisplayName
         }
         elseif ($null -ne $group)
         {
             $objectType = 'Group'
-            $objectId = $group.ObjectId
+            $objectId = $group.Id
             $displayName = $group.DisplayName
         }
         elseif ($null -ne $sp)
         {
             $objectType = 'ServicePrincipal'
-            $objectId = $sp.ObjectId
+            $objectId = $sp.Id
             $displayName = $sp.DisplayName
         }
         else
@@ -295,13 +297,14 @@ function Get-AADObjectId
             return
         }
     }
-    catch [Microsoft.Open.Azure.AD.CommonLibrary.AadNeedAuthenticationException]
-    {
-        Write-Error 'You must be authenticated to Azure AD to run this command.  Run Connect-AzureAD to authenticate.'
-        return
-    }
     catch
     {
+        # Check if the error is due to missing authentication
+        if ($_.Exception.Message -match 'Authentication needed|not authenticated|Connect-MgGraph')
+        {
+            Write-Error 'You must be authenticated to Microsoft Graph to run this command. Run Connect-MgGraph to authenticate.'
+            return
+        }
         Write-Error $_.Exception.Message
         return
     }
@@ -675,10 +678,11 @@ function Remove-DataLakeFolder
     This example sets the ACL for the folder "/MyFolder" in the container "MyContainer" in the storage account "MyStorageAccount" in the resource group "MyResourceGroup" for the identity "MyIdentity" with read access and includes the default scope in the ACL.
 
 .NOTES
-    This function requires the Az.Storage module and an active connection to Azure using Connect-AzAccount. If the specified subscription, resource group, storage account, container, or folder does not exist, the function will return an error message. If the specified identity does not exist, the function will return an error message. If the specified access control type is not 'Read' or 'Write', the function will return an error message.
+    This function requires the Az.Storage, Microsoft.Graph.Users, and Microsoft.Graph.Groups modules and an active connection to Azure using Connect-AzAccount and Connect-MgGraph. If the specified subscription, resource group, storage account, container, or folder does not exist, the function will return an error message. If the specified identity does not exist, the function will return an error message. If the specified access control type is not 'Read' or 'Write', the function will return an error message.
 
     Author: Stephen Carroll - Microsoft
     Date:   2021-08-31
+    Updated: 2025-01-09 - Migrated from AzureAD to Microsoft.Graph for PowerShell 7+ compatibility
 #>
 function Set-DataLakeFolderACL
 {
@@ -714,7 +718,7 @@ function Set-DataLakeFolderACL
     )
 
     # Check if required modules are available and import them
-    if (-not (Import-ModuleDependencies -RequiredModules @('Az.Storage', 'AzureAD') -Quiet)) {
+    if (-not (Import-ModuleDependencies -RequiredModules @('Az.Storage', 'Microsoft.Graph.Users', 'Microsoft.Graph.Groups') -Quiet)) {
         Write-Error 'Required modules are not available. Run Test-ModuleDependencies -AutoInstall to install missing dependencies.'
         return
     }
@@ -939,10 +943,11 @@ function Set-DataLakeFolderACL
     This example gets the ACL for the folder "/MyFolder" in the container "MyContainer" of the storage account "MyStorageAccount" in the resource group "MyResourceGroup" of the Azure subscription "MySubscription".
 
 .NOTES
-    This function requires the Az.Storage and AzureAd modules and an active connection to Azure using Connect-AzAccount. If the specified subscription, resource group, storage account, or container does not exist, the function will return an error message. If the specified folder does not exist, the function will return an error message.
+    This function requires the Az.Storage, Microsoft.Graph.Users, and Microsoft.Graph.Groups modules and an active connection to Azure using Connect-AzAccount and Connect-MgGraph. If the specified subscription, resource group, storage account, or container does not exist, the function will return an error message. If the specified folder does not exist, the function will return an error message.
 
     Author: Stephen Carroll - Microsoft
     Date:   2021-08-31
+    Updated: 2025-01-09 - Migrated from AzureAD to Microsoft.Graph for PowerShell 7+ compatibility
 #>
 function Get-DataLakeFolderACL
 {
@@ -965,7 +970,7 @@ function Get-DataLakeFolderACL
     )
 
     # Check if required modules are available and import them
-    if (-not (Import-ModuleDependencies -RequiredModules @('Az.Storage', 'AzureAD') -Quiet)) {
+    if (-not (Import-ModuleDependencies -RequiredModules @('Az.Storage', 'Microsoft.Graph.Users', 'Microsoft.Graph.Groups') -Quiet)) {
         Write-Error 'Required modules are not available. Run Test-ModuleDependencies -AutoInstall to install missing dependencies.'
         return
     }
@@ -991,14 +996,14 @@ function Get-DataLakeFolderACL
         {
             if ($ace.EntityId)
             {
-                # Get the AD object for the entity
-                $adObject = Get-AzureADObjectByObjectId -ObjectIds $ace.EntityId
+                # Get the AD object for the entity using Microsoft Graph
+                $adObject = Get-MgDirectoryObject -DirectoryObjectId $ace.EntityId -ErrorAction SilentlyContinue
 
                 # Create a custom object with the ACL info
                 [PSCustomObject]@{
-                    DisplayName  = $adObject.DisplayName
+                    DisplayName  = if ($adObject) { $adObject.AdditionalProperties.displayName } else { $null }
                     ObjectId     = $ace.EntityId
-                    ObjectType   = $adObject.ObjectType
+                    ObjectType   = if ($adObject) { $adObject.AdditionalProperties.'@odata.type' -replace '#microsoft.graph.', '' } else { $null }
                     Permissions  = $ace.Permissions
                     DefaultScope = $ace.DefaultScope
                 }
@@ -1048,10 +1053,11 @@ function Get-DataLakeFolderACL
     This example moves the folder "/MySourceFolder" from the container "MySourceContainer" in the storage account "MyStorageAccount" in the resource group "MyResourceGroup" in the Azure subscription "MySubscription" to the folder "/MyDestinationFolder" in the same container.
 
 .NOTES
-    This function requires the Az.Storage and AzureAd modules and an active connection to Azure using Connect-AzAccount. If the specified subscription, resource group, storage account, container, or folder does not exist, the function will return an error message.
+    This function requires the Az.Storage module and an active connection to Azure using Connect-AzAccount. If the specified subscription, resource group, storage account, container, or folder does not exist, the function will return an error message.
 
     Author: Stephen Carroll - Microsoft
     Date:   2021-08-31
+    Updated: 2025-01-09 - Removed unnecessary AzureAD dependency
 #>
 function Move-DataLakeFolder
 {
@@ -1080,7 +1086,7 @@ function Move-DataLakeFolder
     )
 
     # Check if required modules are available and import them
-    if (-not (Import-ModuleDependencies -RequiredModules @('Az.Storage', 'AzureAD') -Quiet)) {
+    if (-not (Import-ModuleDependencies -RequiredModules @('Az.Storage') -Quiet)) {
         Write-Error 'Required modules are not available. Run Test-ModuleDependencies -AutoInstall to install missing dependencies.'
         return
     }
@@ -1147,10 +1153,11 @@ function Move-DataLakeFolder
     This example removes the identity "MyIdentity" from the ACL of the root of the container "MyContainer" in the storage account "MyStorageAccount" in the resource group "MyResourceGroup" in the Azure subscription "MySubscription".
 
 .NOTES
-    This function requires the Az.Storage and AzureAd modules and an active connection to Azure using Connect-AzAccount. If the specified subscription, resource group, storage account, container, or folder does not exist, the function will return an error message. If the specified identity does not exist, the function will return an error message.
+    This function requires the Az.Storage, Microsoft.Graph.Users, and Microsoft.Graph.Groups modules and an active connection to Azure using Connect-AzAccount and Connect-MgGraph. If the specified subscription, resource group, storage account, container, or folder does not exist, the function will return an error message. If the specified identity does not exist, the function will return an error message.
 
     Author: Stephen Carroll - Microsoft
     Date:   2021-08-31
+    Updated: 2025-01-09 - Migrated from AzureAD to Microsoft.Graph for PowerShell 7+ compatibility
 #>
 function Remove-DataLakeFolderACL
 {
@@ -1180,7 +1187,7 @@ function Remove-DataLakeFolderACL
     )
 
     # Check if required modules are available and import them
-    if (-not (Import-ModuleDependencies -RequiredModules @('Az.Storage', 'AzureAD') -Quiet)) {
+    if (-not (Import-ModuleDependencies -RequiredModules @('Az.Storage', 'Microsoft.Graph.Users', 'Microsoft.Graph.Groups') -Quiet)) {
         Write-Error 'Required modules are not available. Run Test-ModuleDependencies -AutoInstall to install missing dependencies.'
         return
     }

@@ -1,7 +1,8 @@
 import-module AzureDatalakeManagement
 
 Connect-AzAccount -UseDeviceAuthentication
-Connect-AzureAd
+# Connect to Microsoft Graph (replaces Connect-AzureAD for PowerShell 7+ compatibility)
+Connect-MgGraph -Scopes "User.Read.All", "Group.Read.All", "Application.Read.All"
 
 $subName = '<subscriptionName>'
 $rgName = 'resourceGroup01'

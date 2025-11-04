@@ -63,7 +63,8 @@ Describe 'AzureDataLakeManagement Dependency Management' {
         It 'Should declare external module dependencies in manifest' {
             $manifest = Test-ModuleManifest -Path $ModulePath
             $manifest.PrivateData.PSData.ExternalModuleDependencies | Should -Contain 'Az.Storage'
-            $manifest.PrivateData.PSData.ExternalModuleDependencies | Should -Contain 'AzureAD'
+            $manifest.PrivateData.PSData.ExternalModuleDependencies | Should -Contain 'Microsoft.Graph.Users'
+            $manifest.PrivateData.PSData.ExternalModuleDependencies | Should -Contain 'Microsoft.Graph.Groups'
             $manifest.PrivateData.PSData.ExternalModuleDependencies | Should -Contain 'Az.Accounts'
         }
         
