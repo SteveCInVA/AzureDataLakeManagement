@@ -300,7 +300,10 @@ function Get-AADObjectId
     catch
     {
         # Check if the error is due to missing authentication
-        if ($_.Exception.Message -match 'Authentication needed|not authenticated|Connect-MgGraph')
+        # Microsoft Graph throws specific error codes for authentication issues
+        if ($_.Exception.GetType().Name -match 'AuthenticationException|UnauthorizedAccessException' -or
+            $_.Exception.Message -match '401|Unauthorized|authentication.*required' -or
+            $_.FullyQualifiedErrorId -match 'Authentication')
         {
             Write-Error 'You must be authenticated to Microsoft Graph to run this command. Run Connect-MgGraph to authenticate.'
             return
@@ -999,11 +1002,29 @@ function Get-DataLakeFolderACL
                 # Get the AD object for the entity using Microsoft Graph
                 $adObject = Get-MgDirectoryObject -DirectoryObjectId $ace.EntityId -ErrorAction SilentlyContinue
 
+                # Extract display name and object type from the directory object
+                $displayName = $null
+                $objectType = $null
+                
+                if ($adObject) {
+                    # Try to get DisplayName from the object properties first, then from AdditionalProperties
+                    if ($adObject.PSObject.Properties.Name -contains 'DisplayName') {
+                        $displayName = $adObject.DisplayName
+                    } elseif ($adObject.AdditionalProperties.ContainsKey('displayName')) {
+                        $displayName = $adObject.AdditionalProperties['displayName']
+                    }
+                    
+                    # Extract object type from odata.type
+                    if ($adObject.AdditionalProperties.ContainsKey('@odata.type')) {
+                        $objectType = $adObject.AdditionalProperties['@odata.type'] -replace '#microsoft.graph.', ''
+                    }
+                }
+
                 # Create a custom object with the ACL info
                 [PSCustomObject]@{
-                    DisplayName  = if ($adObject) { $adObject.AdditionalProperties.displayName } else { $null }
+                    DisplayName  = $displayName
                     ObjectId     = $ace.EntityId
-                    ObjectType   = if ($adObject) { $adObject.AdditionalProperties.'@odata.type' -replace '#microsoft.graph.', '' } else { $null }
+                    ObjectType   = $objectType
                     Permissions  = $ace.Permissions
                     DefaultScope = $ace.DefaultScope
                 }
