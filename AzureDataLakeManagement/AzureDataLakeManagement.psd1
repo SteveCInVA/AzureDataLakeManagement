@@ -12,7 +12,7 @@
 RootModule = 'AzureDataLakeManagement.psm1'
 
 # Version number of this module.
-ModuleVersion = '2025.11.1'
+ModuleVersion = '2025.11.2'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Desktop', 'Core')
@@ -120,7 +120,7 @@ PrivateData = @{
         # RequireLicenseAcceptance = $false
 
         # External dependent modules of this module
-        ExternalModuleDependencies = @('Az.Storage', 'AzureAD', 'Az.Accounts')
+        ExternalModuleDependencies = @('Az.Storage', 'Microsoft.Graph.Applications',  'Microsoft.Graph.Users', 'Microsoft.Graph.Groups', 'Microsoft.Graph.DirectoryObjects')
 
     } # End of PSData hashtable
 

@@ -21,9 +21,11 @@ Describe 'AzureDataLakeManagement Dependency Management' {
         
         It 'Should return boolean value' {
             Mock Get-Module { $null } -ParameterFilter { $Name -eq 'Az.Storage' }
-            Mock Get-Module { $null } -ParameterFilter { $Name -eq 'AzureAD' }  
-            Mock Get-Module { $null } -ParameterFilter { $Name -eq 'Az.Accounts' }
-            
+            Mock Get-Module { $null } -ParameterFilter { $Name -eq 'Microsoft.Graph.Applications' }  
+            Mock Get-Module { $null } -ParameterFilter { $Name -eq 'Microsoft.Graph.Users' }
+            Mock Get-Module { $null } -ParameterFilter { $Name -eq 'Microsoft.Graph.Groups' }
+            Mock Get-Module { $null } -ParameterFilter { $Name -eq 'Microsoft.Graph.DirectoryObjects' }
+
             $result = Test-ModuleDependencies -Quiet
             $result | Should -BeOfType [System.Boolean]
         }
@@ -63,8 +65,10 @@ Describe 'AzureDataLakeManagement Dependency Management' {
         It 'Should declare external module dependencies in manifest' {
             $manifest = Test-ModuleManifest -Path $ModulePath
             $manifest.PrivateData.PSData.ExternalModuleDependencies | Should -Contain 'Az.Storage'
-            $manifest.PrivateData.PSData.ExternalModuleDependencies | Should -Contain 'AzureAD'
-            $manifest.PrivateData.PSData.ExternalModuleDependencies | Should -Contain 'Az.Accounts'
+            $manifest.PrivateData.PSData.ExternalModuleDependencies | Should -Contain 'Microsoft.Graph.Applications'
+            $manifest.PrivateData.PSData.ExternalModuleDependencies | Should -Contain 'Microsoft.Graph.Users'
+            $manifest.PrivateData.PSData.ExternalModuleDependencies | Should -Contain 'Microsoft.Graph.Groups'
+            $manifest.PrivateData.PSData.ExternalModuleDependencies | Should -Contain 'Microsoft.Graph.DirectoryObjects'
         }
         
         It 'Should export dependency management functions' {
