@@ -83,7 +83,3 @@ Describe 'DevContainer Configuration' {
         }
     }
 }
-
-AfterAll {
-    # Clean up
-}
