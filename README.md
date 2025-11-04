@@ -1,6 +1,6 @@
 # AzureDataLakeManagement
 This project was created to help simplify the process of managing an Azure Datalake specifically around updating existing ACL's to child objects within the lake.
-Yes, this can be accomplished with Azure Storage Explorer, however come customers don't like to install new software.
+Yes, this can be accomplished with Azure Storage Explorer, however some customers don't like to install new software.
 
 My goal, is to make a straight forward set of functions that will assist a user in configuring folders and the associated ACL's in an ADLS Gen 2 storage container using the objects names rather than ID's.
 
