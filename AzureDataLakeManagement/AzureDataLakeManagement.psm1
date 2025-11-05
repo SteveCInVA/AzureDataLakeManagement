@@ -682,10 +682,13 @@ function Remove-DataLakeFolder
 
 .NOTES
     This function requires the Az.Storage, Microsoft.Graph.Users, and Microsoft.Graph.Groups modules and an active connection to Azure using Connect-AzAccount and Connect-MgGraph. If the specified subscription, resource group, storage account, container, or folder does not exist, the function will return an error message. If the specified identity does not exist, the function will return an error message. If the specified access control type is not 'Read' or 'Write', the function will return an error message.
+    
+    Resource Locks: If the storage account has a resource lock (ReadOnly or CanNotDelete), ACL modification operations may fail. The function provides specific error messages to help identify resource lock issues. To resolve, remove or modify the resource lock on the storage account before attempting to set ACLs.
 
     Author: Stephen Carroll - Microsoft
     Date:   2021-08-31
     Updated: 2025-01-09 - Migrated from AzureAD to Microsoft.Graph for PowerShell 7+ compatibility
+    Updated: 2025-01-10 - Enhanced error handling for resource lock scenarios
 #>
 function Set-DataLakeFolderACL
 {
@@ -871,6 +874,43 @@ function Set-DataLakeFolderACL
     catch [Microsoft.PowerShell.Commands.WriteErrorException]
     {
         Write-Error 'Error communicating with Powershell module AZ.Storage. Ensure you have the latest version of the module installed. (Install-Module -Name Az.Storage -Force)'
+        return
+    }
+    catch
+    {
+        # Enhanced error handling to detect resource lock and permission issues
+        $errorMessage = $_.Exception.Message
+        $errorDetails = $_.Exception.InnerException.Message
+        
+        # Check for resource lock-related errors
+        if ($errorMessage -match 'ScopeLocked|resource.*lock|ReadOnly' -or 
+            $errorDetails -match 'ScopeLocked|resource.*lock|ReadOnly')
+        {
+            Write-Error ("Unable to set ACL due to a resource lock on the storage account '{0}'. " +
+                        "Resource locks prevent modifications to locked resources. " +
+                        "To set the ACL, first remove or modify the resource lock on the storage account, " +
+                        "then retry the operation. Error details: {1}" -f $StorageAccountName, $errorMessage)
+        }
+        # Check for permission-related errors
+        elseif ($errorMessage -match 'Forbidden|403|AuthorizationFailed|insufficient.*permission' -or
+                $errorDetails -match 'Forbidden|403|AuthorizationFailed|insufficient.*permission')
+        {
+            Write-Error ("Access denied while attempting to set ACL. Ensure you have the necessary permissions " +
+                        "on storage account '{0}'. Required permissions include 'Microsoft.Storage/storageAccounts/blobServices/containers/blobs/modifyPermissions/action'. " +
+                        "Error details: {1}" -f $StorageAccountName, $errorMessage)
+        }
+        # Generic error with enhanced context
+        else
+        {
+            Write-Error ("Failed to set ACL for identity '{0}' on folder '{1}' in container '{2}'. " +
+                        "Error: {3}" -f $Identity, $FolderPath, $ContainerName, $errorMessage)
+            
+            # Include inner exception details if available
+            if ($errorDetails -and $errorDetails -ne $errorMessage)
+            {
+                Write-Error "Additional details: $errorDetails"
+            }
+        }
         return
     }
 
@@ -1174,10 +1214,13 @@ function Move-DataLakeFolder
 
 .NOTES
     This function requires the Az.Storage, Microsoft.Graph.Users, and Microsoft.Graph.Groups modules and an active connection to Azure using Connect-AzAccount and Connect-MgGraph. If the specified subscription, resource group, storage account, container, or folder does not exist, the function will return an error message. If the specified identity does not exist, the function will return an error message.
+    
+    Resource Locks: If the storage account has a resource lock (ReadOnly or CanNotDelete), ACL modification operations may fail. The function provides specific error messages to help identify resource lock issues. To resolve, remove or modify the resource lock on the storage account before attempting to remove ACLs.
 
     Author: Stephen Carroll - Microsoft
     Date:   2021-08-31
     Updated: 2025-01-09 - Migrated from AzureAD to Microsoft.Graph for PowerShell 7+ compatibility
+    Updated: 2025-01-10 - Enhanced error handling for resource lock scenarios
 #>
 function Remove-DataLakeFolderACL
 {
@@ -1261,8 +1304,39 @@ function Remove-DataLakeFolderACL
     }
     catch
     {
-        # Write any errors to the console
-        Write-Error $_.Exception.Message
+        # Enhanced error handling to detect resource lock and permission issues
+        $errorMessage = $_.Exception.Message
+        $errorDetails = $_.Exception.InnerException.Message
+        
+        # Check for resource lock-related errors
+        if ($errorMessage -match 'ScopeLocked|resource.*lock|ReadOnly' -or 
+            $errorDetails -match 'ScopeLocked|resource.*lock|ReadOnly')
+        {
+            Write-Error ("Unable to remove ACL due to a resource lock on the storage account '{0}'. " +
+                        "Resource locks prevent modifications to locked resources. " +
+                        "To remove the ACL, first remove or modify the resource lock on the storage account, " +
+                        "then retry the operation. Error details: {1}" -f $StorageAccountName, $errorMessage)
+        }
+        # Check for permission-related errors
+        elseif ($errorMessage -match 'Forbidden|403|AuthorizationFailed|insufficient.*permission' -or
+                $errorDetails -match 'Forbidden|403|AuthorizationFailed|insufficient.*permission')
+        {
+            Write-Error ("Access denied while attempting to remove ACL. Ensure you have the necessary permissions " +
+                        "on storage account '{0}'. Required permissions include 'Microsoft.Storage/storageAccounts/blobServices/containers/blobs/modifyPermissions/action'. " +
+                        "Error details: {1}" -f $StorageAccountName, $errorMessage)
+        }
+        # Generic error with enhanced context
+        else
+        {
+            Write-Error ("Failed to remove ACL for identity '{0}' from folder '{1}' in container '{2}'. " +
+                        "Error: {3}" -f $Identity, $FolderPath, $ContainerName, $errorMessage)
+            
+            # Include inner exception details if available
+            if ($errorDetails -and $errorDetails -ne $errorMessage)
+            {
+                Write-Error "Additional details: $errorDetails"
+            }
+        }
     }
 }
 
