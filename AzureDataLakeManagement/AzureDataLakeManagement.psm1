@@ -880,11 +880,11 @@ function Set-DataLakeFolderACL
     {
         # Enhanced error handling to detect resource lock and permission issues
         $errorMessage = $_.Exception.Message
-        $errorDetails = $_.Exception.InnerException.Message
+        $errorDetails = if ($_.Exception.InnerException) { $_.Exception.InnerException.Message } else { $null }
         
         # Check for resource lock-related errors
         if ($errorMessage -match 'ScopeLocked|resource.*lock|ReadOnly' -or 
-            $errorDetails -match 'ScopeLocked|resource.*lock|ReadOnly')
+            ($errorDetails -and $errorDetails -match 'ScopeLocked|resource.*lock|ReadOnly'))
         {
             Write-Error ("Unable to set ACL due to a resource lock on the storage account '{0}'. " +
                         "Resource locks prevent modifications to locked resources. " +
@@ -893,7 +893,7 @@ function Set-DataLakeFolderACL
         }
         # Check for permission-related errors
         elseif ($errorMessage -match 'Forbidden|403|AuthorizationFailed|insufficient.*permission' -or
-                $errorDetails -match 'Forbidden|403|AuthorizationFailed|insufficient.*permission')
+                ($errorDetails -and $errorDetails -match 'Forbidden|403|AuthorizationFailed|insufficient.*permission'))
         {
             Write-Error ("Access denied while attempting to set ACL. Ensure you have the necessary permissions " +
                         "on storage account '{0}'. Required permissions include 'Microsoft.Storage/storageAccounts/blobServices/containers/blobs/modifyPermissions/action'. " +
@@ -1306,11 +1306,11 @@ function Remove-DataLakeFolderACL
     {
         # Enhanced error handling to detect resource lock and permission issues
         $errorMessage = $_.Exception.Message
-        $errorDetails = $_.Exception.InnerException.Message
+        $errorDetails = if ($_.Exception.InnerException) { $_.Exception.InnerException.Message } else { $null }
         
         # Check for resource lock-related errors
         if ($errorMessage -match 'ScopeLocked|resource.*lock|ReadOnly' -or 
-            $errorDetails -match 'ScopeLocked|resource.*lock|ReadOnly')
+            ($errorDetails -and $errorDetails -match 'ScopeLocked|resource.*lock|ReadOnly'))
         {
             Write-Error ("Unable to remove ACL due to a resource lock on the storage account '{0}'. " +
                         "Resource locks prevent modifications to locked resources. " +
@@ -1319,7 +1319,7 @@ function Remove-DataLakeFolderACL
         }
         # Check for permission-related errors
         elseif ($errorMessage -match 'Forbidden|403|AuthorizationFailed|insufficient.*permission' -or
-                $errorDetails -match 'Forbidden|403|AuthorizationFailed|insufficient.*permission')
+                ($errorDetails -and $errorDetails -match 'Forbidden|403|AuthorizationFailed|insufficient.*permission'))
         {
             Write-Error ("Access denied while attempting to remove ACL. Ensure you have the necessary permissions " +
                         "on storage account '{0}'. Required permissions include 'Microsoft.Storage/storageAccounts/blobServices/containers/blobs/modifyPermissions/action'. " +
