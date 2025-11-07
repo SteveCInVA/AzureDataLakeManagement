@@ -1,4 +1,4 @@
-#region Dependency Management Functions
+﻿#region Dependency Management Functions
 
 <#
 .SYNOPSIS
@@ -29,6 +29,7 @@
 #>
 function Test-ModuleDependencies {
     [CmdletBinding()]
+    [OutputType([System.Boolean])]
     param(
         [switch]$AutoInstall,
         [switch]$Quiet
@@ -37,11 +38,11 @@ function Test-ModuleDependencies {
     $requiredModules = @('Az.Storage', 'Microsoft.Graph.Applications', 'Microsoft.Graph.Users', 'Microsoft.Graph.Groups', 'Microsoft.Graph.DirectoryObjects')
     $missingModules = @()
     $availableModules = @()
-    
+
     if (-not $Quiet) {
         Write-Host "Checking AzureDataLakeManagement module dependencies..." -ForegroundColor Yellow
     }
-    
+
     foreach ($moduleName in $requiredModules) {
         $module = Get-Module -Name $moduleName -ListAvailable -ErrorAction SilentlyContinue
         if ($null -eq $module) {
@@ -49,27 +50,29 @@ function Test-ModuleDependencies {
             if (-not $Quiet) {
                 Write-Warning "Missing required module: $moduleName"
             }
-        } else {
+        }
+        else {
             $availableModules += $moduleName
             if (-not $Quiet) {
                 Write-Host "✓ Found module: $moduleName (Version: $($module[0].Version))" -ForegroundColor Green
             }
         }
     }
-    
+
     if ($missingModules.Count -eq 0) {
         if (-not $Quiet) {
             Write-Host "✓ All required modules are available." -ForegroundColor Green
         }
         return $true
     }
-    
+
     if ($AutoInstall) {
         if (-not $Quiet) {
             Write-Host "Installing missing modules..." -ForegroundColor Yellow
         }
         return Install-ModuleDependencies -Modules $missingModules -Quiet:$Quiet
-    } else {
+    }
+    else {
         if (-not $Quiet) {
             Write-Host "`nTo install missing modules, run:" -ForegroundColor Cyan
             Write-Host "Test-ModuleDependencies -AutoInstall" -ForegroundColor White
@@ -113,18 +116,18 @@ function Install-ModuleDependencies {
         [string[]]$Modules = @('Az.Storage', 'Microsoft.Graph.Applications', 'Microsoft.Graph.Users', 'Microsoft.Graph.Groups', 'Microsoft.Graph.DirectoryObjects'),
         [switch]$Quiet
     )
-    
+
     $successCount = 0
     $failureCount = 0
-    
+
     foreach ($moduleName in $Modules) {
         try {
             if (-not $Quiet) {
                 Write-Host "Installing module: $moduleName..." -ForegroundColor Yellow
             }
-            
+
             Install-Module -Name $moduleName -Force -Scope CurrentUser -AllowClobber -ErrorAction Stop
-            
+
             if (-not $Quiet) {
                 Write-Host "✓ Successfully installed: $moduleName" -ForegroundColor Green
             }
@@ -135,15 +138,16 @@ function Install-ModuleDependencies {
             $failureCount++
         }
     }
-    
+
     if (-not $Quiet) {
         if ($failureCount -eq 0) {
             Write-Host "✓ All modules installed successfully." -ForegroundColor Green
-        } else {
+        }
+        else {
             Write-Warning "Installed $successCount modules, failed to install $failureCount modules."
         }
     }
-    
+
     return ($failureCount -eq 0)
 }
 
@@ -171,13 +175,14 @@ function Install-ModuleDependencies {
 #>
 function Import-ModuleDependencies {
     [CmdletBinding()]
+    [OutputType([System.Boolean])]
     param(
         [string[]]$RequiredModules = @('Az.Storage', 'Microsoft.Graph.Applications', 'Microsoft.Graph.Users', 'Microsoft.Graph.Groups', 'Microsoft.Graph.DirectoryObjects'),
         [switch]$Quiet
     )
-    
+
     $importFailures = @()
-    
+
     foreach ($moduleName in $RequiredModules) {
         try {
             $module = Get-Module -Name $moduleName -ListAvailable -ErrorAction SilentlyContinue
@@ -186,7 +191,7 @@ function Import-ModuleDependencies {
                 Write-Error "Module $moduleName is not available. Please install it first."
                 continue
             }
-            
+
             Import-Module -Name $moduleName -ErrorAction Stop -Force
             if (-not $Quiet) {
                 Write-Verbose "Successfully imported module: $moduleName"
@@ -197,12 +202,12 @@ function Import-ModuleDependencies {
             Write-Error "Failed to import module $moduleName`: $($_.Exception.Message)"
         }
     }
-    
+
     if ($importFailures.Count -gt 0) {
         Write-Error "Failed to import modules: $($importFailures -join ', '). Some functions may not work correctly."
         return $false
     }
-    
+
     return $true
 }
 
@@ -241,8 +246,7 @@ function Import-ModuleDependencies {
     Date:   2021-08-31
     Updated: 2025-01-09 - Migrated from AzureAD to Microsoft.Graph for PowerShell 7+ compatibility
 #>
-function Get-AADObjectId
-{
+function Get-AADObjectId {
     param (
         # The identity for which the Azure AD Object ID is to be fetched
         [Parameter(Mandatory = $true)]
@@ -253,8 +257,7 @@ function Get-AADObjectId
     # Replacing single quotes in the identity with double single quotes for filter syntax
     $Identity = $Identity.Replace("'", "''")
 
-    try
-    {
+    try {
         # Initializing user, group, and service principal to null
         $user = $null
         $group = $null
@@ -263,48 +266,40 @@ function Get-AADObjectId
         # Try to get the user, group, and service principal
         # Using Microsoft Graph cmdlets instead of AzureAD
         $user = Get-MgUser -Filter "UserPrincipalName eq '$Identity'" -ErrorAction SilentlyContinue
-        if ($null -eq $user)
-        {
+        if ($null -eq $user) {
             $group = Get-MgGroup -Filter "DisplayName eq '$Identity'" -ErrorAction SilentlyContinue
-            if ($null -eq $group)
-            {
+            if ($null -eq $group) {
                 $sp = Get-MgServicePrincipal -Filter "DisplayName eq '$Identity'" -ErrorAction SilentlyContinue
             }
         }
 
         # Check which object is not null and assign the corresponding values
-        if ($null -ne $user)
-        {
+        if ($null -ne $user) {
             $objectType = 'User'
             $objectId = $user.Id
             $displayName = $user.DisplayName
         }
-        elseif ($null -ne $group)
-        {
+        elseif ($null -ne $group) {
             $objectType = 'Group'
             $objectId = $group.Id
             $displayName = $group.DisplayName
         }
-        elseif ($null -ne $sp)
-        {
+        elseif ($null -ne $sp) {
             $objectType = 'ServicePrincipal'
             $objectId = $sp.Id
             $displayName = $sp.DisplayName
         }
-        else
-        {
+        else {
             Write-Error ('Object not found.  Unable to find object "{0}" in Azure AD.' -f $Identity)
             return
         }
     }
-    catch
-    {
+    catch {
         # Check if the error is due to missing authentication
         # Microsoft Graph throws specific error codes for authentication issues
         if ($_.Exception.GetType().Name -match 'AuthenticationException|UnauthorizedAccessException' -or
             $_.Exception.Message -match '401|Unauthorized|authentication.*required' -or
-            $_.FullyQualifiedErrorId -match 'Authentication')
-        {
+            $_.FullyQualifiedErrorId -match 'Authentication') {
             Write-Error 'You must be authenticated to Microsoft Graph to run this command. Run Connect-MgGraph to authenticate.'
             return
         }
@@ -350,8 +345,7 @@ function Get-AADObjectId
     Author: Stephen Carroll - Microsoft
     Date:   2021-08-31
 #>
-function Get-AzureSubscriptionInfo
-{
+function Get-AzureSubscriptionInfo {
     param (
         # The name of the Azure subscription
         [Parameter(Mandatory = $true)]
@@ -359,26 +353,22 @@ function Get-AzureSubscriptionInfo
         [string]$SubscriptionName
     )
 
-    try
-    {
+    try {
         # Get the subscription details
         $subscription = Get-AzSubscription -SubscriptionName $SubscriptionName
 
         # Check if the subscription exists
-        if ($null -eq $subscription)
-        {
+        if ($null -eq $subscription) {
             Write-Error('Subscription "{0}" not found.', $SubscriptionName)
             return
         }
-        else
-        {
+        else {
             # Write verbose messages for debugging
             Write-Verbose 'Function: Get-AzureSubscriptionInfo: Subscription found.'
             Write-Verbose "SubscriptionID: $subscription.id  SubscriptionName: $subscription.Name"
         }
     }
-    catch
-    {
+    catch {
         # Handle exceptions and write an error message
         Write-Error 'Ensure you have run Connect-AzAccount and that the subscription exists.'
         return
@@ -432,8 +422,8 @@ function Get-AzureSubscriptionInfo
     Author: Stephen Carroll - Microsoft
     Date:   2021-08-31
 #>
-function Add-DataLakeFolder
-{
+function Add-DataLakeFolder {
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory = $true)]
         [string]$SubscriptionName, # Azure subscription name
@@ -455,18 +445,22 @@ function Add-DataLakeFolder
 
     # Get the subscription ID
     $subId = (Get-AzureSubscriptionInfo -SubscriptionName $SubscriptionName).SubscriptionId
-    if ($null -eq $subId)
-    {
+    if ($null -eq $subId) {
         Write-Error 'Subscription not found.'
         return
     }
 
     # Set the current Azure context
-    $subContext = Set-AzContext -Subscription $subId
-    if ($null -eq $subContext)
-    {
-        Write-Error 'Failed to set the Azure context.'
-        return
+    if ($pscmdlet.ShouldProcess("Setting Azure context to subscription $SubscriptionName", 'Set Azure Context')) {
+        # Set the current Azure context
+        $subContext = Set-AzContext -Subscription $subId
+        if ($null -eq $subContext) {
+            Write-Error 'Failed to set the Azure context.'
+            return
+        }
+        else {
+            Write-Verbose $subContext.Name
+        }    
     }
 
     # Check if the Az.Storage module is available and import it
@@ -477,45 +471,42 @@ function Add-DataLakeFolder
 
     # Get the Data Lake Storage account
     $storageAccount = Get-AzStorageAccount -Name $StorageAccountName -ResourceGroup $ResourceGroupName
-    if ($null -eq $storageAccount)
-    {
+    if ($null -eq $storageAccount) {
         Write-Error 'Storage account not found.'
         return
     }
 
     # Set the context to the Data Lake Storage account
     $ctx = New-AzStorageContext -StorageAccountName $StorageAccountName
-    if ($null -eq $ctx)
-    {
+    if ($null -eq $ctx) {
         Write-Error 'Failed to set the Data Lake Storage account context.'
         return
     }
 
     # Create the folder
-    try
-    {
-        $ret = New-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Directory -ErrorAction Stop
-    }
-    catch
-    {
-        if ($ErrorIfFolderExists)
-        {
-            Write-Error "Folder $FolderPath already exists."
+    if ($PSCmdlet.ShouldProcess("$ContainerName\$FolderPath", 'Create Data Lake Folder')) {
+        try {
+            $ret = New-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Directory -ErrorAction Stop
+        }
+        catch {
+            if ($ErrorIfFolderExists) {
+                Write-Error "Folder $FolderPath already exists."
+                return
+            }
+            $ret = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath  # Get the folder if it already exists
             return
         }
-        $ret = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath  # Get the folder if it already exists
-        return
+
+        if ($null -eq $ret) {
+            Write-Error 'Failed to create the folder.'
+            return
+        }
+        else {
+            return $ret  # Return the created folder
+        }
     }
 
-    if ($null -eq $ret)
-    {
-        Write-Error 'Failed to create the folder.'
-        return
-    }
-    else
-    {
-        return $ret  # Return the created folder
-    }
+
 }
 
 <#
@@ -553,8 +544,8 @@ function Add-DataLakeFolder
     Author: Stephen Carroll - Microsoft
     Date:   2021-08-31
 #>
-function Remove-DataLakeFolder
-{
+function Remove-DataLakeFolder {
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory = $true)]
         [string]$SubscriptionName, # Azure subscription name
@@ -576,45 +567,44 @@ function Remove-DataLakeFolder
 
     # Get the subscription ID
     $subId = (Get-AzureSubscriptionInfo -SubscriptionName $SubscriptionName).SubscriptionId
-    if ($null -eq $subId)
-    {
+    if ($null -eq $subId) {
         Write-Error 'Subscription not found.'
         return
     }
 
     # Set the current Azure context
-    $subContext = Set-AzContext -Subscription $subId
-    if ($null -eq $subContext)
-    {
-        Write-Error 'Failed to set the Azure context.'
-        return
+    if ($pscmdlet.ShouldProcess("Setting Azure context to subscription $SubscriptionName", 'Set Azure Context')) {
+        # Set the current Azure context
+        $subContext = Set-AzContext -Subscription $subId
+        if ($null -eq $subContext) {
+            Write-Error 'Failed to set the Azure context.'
+            return
+        }
+        else {
+            Write-Verbose $subContext.Name
+        }    
     }
 
     # Get the Data Lake Storage account
     $storageAccount = Get-AzStorageAccount -Name $StorageAccountName -ResourceGroup $ResourceGroupName
-    if ($null -eq $storageAccount)
-    {
+    if ($null -eq $storageAccount) {
         Write-Error 'Storage account not found.'
         return
     }
 
     # Set the context to the Data Lake Storage account
     $ctx = New-AzStorageContext -StorageAccountName $StorageAccountName
-    if ($null -eq $ctx)
-    {
+    if ($null -eq $ctx) {
         Write-Error 'Failed to set the Data Lake Storage account context.'
         return
     }
 
     # Ensure the folder exists before deleting
-    try
-    {
+    try {
         $folderExists = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath -ErrorAction Stop
     }
-    catch
-    {
-        if ($ErrorIfFolderDoesNotExist)
-        {
+    catch {
+        if ($ErrorIfFolderDoesNotExist) {
             Write-Error "Folder '$FolderPath' does not exist to delete."
             return
         }
@@ -622,18 +612,17 @@ function Remove-DataLakeFolder
     }
 
     # Delete the folder
-    if ($null -ne $folderExists)
-    {
-        $ret = Remove-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Force
+    if ($PSCmdlet.ShouldProcess("$ContainerName\$FolderPath", 'Remove Data Lake Folder')) {
+        if ($null -ne $folderExists) {
+            $ret = Remove-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Force
+        }
     }
 
-    if ($null -ne $ret)
-    {
+    if ($null -ne $ret) {
         Write-Error 'Failed to delete the folder.'
         return
     }
-    else
-    {
+    else {
         Write-Host "Folder $ContainerName\$FolderPath deleted successfully."
         return
     }
@@ -687,9 +676,8 @@ function Remove-DataLakeFolder
     Date:   2021-08-31
     Updated: 2025-01-09 - Migrated from AzureAD to Microsoft.Graph for PowerShell 7+ compatibility
 #>
-function Set-DataLakeFolderACL
-{
-    [CmdletBinding()]
+function Set-DataLakeFolderACL {
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory = $true)]
         [string]$SubscriptionName,
@@ -727,192 +715,176 @@ function Set-DataLakeFolderACL
     }
 
     $sub = Get-AzureSubscriptionInfo -SubscriptionName $SubscriptionName
-    if ($null -eq $sub)
-    {
+    if ($null -eq $sub) {
         Write-Error 'Subscription not found. Ensure you have run Connect-AzAccount before execution.'
         return
     }
-    else
-    {
+    else {
         $subId = $sub.SubscriptionId
     }
 
     # Get the object ID of the identity to use in the ACL
     $identityObj = Get-AADObjectId -Identity $Identity
-    if ($null -eq $identityObj)
-    {
+    if ($null -eq $identityObj) {
         Write-Error 'Identity not found.'
         return
     }
-    else
-    {
+    else {
         Write-Verbose ('{0} ID: {1} Display Name: {2}' -f $identityObj.ObjectType, $identityObj.ObjectId, $identityObj.DisplayName)
     }
 
     # Set the current Azure context
-    $subContext = Set-AzContext -Subscription $subId
-    if ($null -eq $subContext)
-    {
-        Write-Error 'Failed to set the Azure context.'
-        return
+    if ($pscmdlet.ShouldProcess("Setting Azure context to subscription $SubscriptionName", 'Set Azure Context')) {
+        # Set the current Azure context
+        $subContext = Set-AzContext -Subscription $subId
+        if ($null -eq $subContext) {
+            Write-Error 'Failed to set the Azure context.'
+            return
+        }
+        else {
+            Write-Verbose $subContext.Name
+        }    
     }
-    else
-    {
-        Write-Verbose $subContext.Name
-    }
+
 
     # Get the Data Lake Storage account
     $storageAccount = Get-AzStorageAccount -Name $StorageAccountName -ResourceGroup $ResourceGroupName
-    if ($null -eq $storageAccount)
-    {
+    if ($null -eq $storageAccount) {
         Write-Error 'Storage account not found.'
         return
     }
-    else
-    {
+    else {
         Write-Verbose $storageAccount.StorageAccountName
     }
 
     # Set the context to the Data Lake Storage account
     $ctx = New-AzStorageContext -StorageAccountName $StorageAccountName
-    if ($null -eq $ctx)
-    {
+    if ($null -eq $ctx) {
         Write-Error 'Failed to set the Data Lake Storage account context.'
         return
     }
 
     # verify the folder exists before setting the ACL
-    try
-    {
+    try {
         $folderExists = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath
-        if ($null -eq $folderExists)
-        {
+        if ($null -eq $folderExists) {
             Write-Error('Folder not found.')
             return
         }
     }
-    catch
-    {
+    catch {
         Write-Error('Folder not found.')
         return
     }
 
     # translate the access control type to applied permission
-    $permission = switch ( $AccessControlType )
-    { 'Read'
-        { 'r-x'
+    $permission = switch ( $AccessControlType ) {
+        'Read' {
+            'r-x'
         }
-        'Write'
-        { 'rwx'
+        'Write' {
+            'rwx'
         }
-        default
-        { ''
+        default {
+            ''
         }
     }
 
-    $identityType = switch ($identityObj.ObjectType)
-    { 'User'
-        { 'user'
+    $identityType = switch ($identityObj.ObjectType) {
+        'User' {
+            'user'
         }
-        'Group'
-        { 'group'
+        'Group' {
+            'group'
         }
-        'ServicePrincipal'
-        { 'user'
+        'ServicePrincipal' {
+            'user'
         }
-        'ManagedIdentity'
-        { 'other'
+        'ManagedIdentity' {
+            'other'
         }
-        default
-        { ''
+        default {
+            ''
         }
     }
 
     # set the ACL at the container level
-    if ($SetContainerACL)
-    {
-        Write-Verbose 'set container ACL'
-        $containerACL = (Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName).ACL
-        $containerACL = Set-AzDataLakeGen2ItemAclObject -AccessControlType Mask -Permission 'r-x' -InputObject $containerACL
-        $containerACL = Set-AzDataLakeGen2ItemAclObject -AccessControlType $identityType -EntityId $identityObj.ObjectId -Permission 'r-x' -InputObject $containerACL
-        $result = Update-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Acl $containerACL
+    if ($SetContainerACL) {
+        if ($PSCmdlet.ShouldProcess($ContainerName, "Set container ACL for identity '$($identityObj.DisplayName)' with Read access")) {
+            Write-Verbose 'set container ACL'
+            $containerACL = (Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName).ACL
+            $containerACL = Set-AzDataLakeGen2ItemAclObject -AccessControlType Mask -Permission 'r-x' -InputObject $containerACL
+            $containerACL = Set-AzDataLakeGen2ItemAclObject -AccessControlType $identityType -EntityId $identityObj.ObjectId -Permission 'r-x' -InputObject $containerACL
+            $result = Update-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Acl $containerACL
 
-        if ($result.FailedEntries.Count -gt 0)
-        {
-            Write-Error 'Failed to set the ACL for the container.'
-            Write-Error $result.FailedEntries
-            return
-        }
-        else
-        {
-            Write-Host 'Container ACL set successfully.'
-            Write-Verbose ('Successful Directories: {0} ' -f $result.TotalDirectoriesSuccessfulCount)
-            Write-Verbose ('Successful Files: {0} ' -f $result.TotalFilesSuccessfulCount)
+            if ($result.FailedEntries.Count -gt 0) {
+                Write-Error 'Failed to set the ACL for the container.'
+                Write-Error $result.FailedEntries
+                return
+            }
+            else {
+                Write-Host 'Container ACL set successfully.'
+                Write-Verbose ('Successful Directories: {0} ' -f $result.TotalDirectoriesSuccessfulCount)
+                Write-Verbose ('Successful Files: {0} ' -f $result.TotalFilesSuccessfulCount)
+            }
         }
     }
 
     # get the ACL for the folder
     $acl = (Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath).ACL
 
-    try
-    {
-        $acl = Set-AzDataLakeGen2ItemAclObject -AccessControlType Mask -Permission 'rwx' -InputObject $acl
-        $acl = Set-AzDataLakeGen2ItemAclObject -AccessControlType $identityType -EntityId $identityObj.ObjectId -Permission $permission -InputObject $acl
-        if(-not $DoNotApplyACLRecursively)
-        {
-            $result = Update-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $acl
+    if ($PSCmdlet.ShouldProcess("$ContainerName\$FolderPath", "Set ACL for identity '$($identityObj.DisplayName)' with $AccessControlType access")) {
+        try {
+            $acl = Set-AzDataLakeGen2ItemAclObject -AccessControlType Mask -Permission 'rwx' -InputObject $acl
+            $acl = Set-AzDataLakeGen2ItemAclObject -AccessControlType $identityType -EntityId $identityObj.ObjectId -Permission $permission -InputObject $acl
+            if (-not $DoNotApplyACLRecursively) {
+                $result = Update-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $acl
+            }
+            else {
+                $result = Update-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $acl
+            }
+
         }
-        else
-        {
-            $result = Update-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $acl
+        catch [Microsoft.PowerShell.Commands.WriteErrorException] {
+            Write-Error 'Error communicating with Powershell module AZ.Storage. Ensure you have the latest version of the module installed. (Install-Module -Name Az.Storage -Force)'
+            return
         }
 
-    }
-    catch [Microsoft.PowerShell.Commands.WriteErrorException]
-    {
-        Write-Error 'Error communicating with Powershell module AZ.Storage. Ensure you have the latest version of the module installed. (Install-Module -Name Az.Storage -Force)'
-        return
-    }
-
-    if ($result.FailedEntries.Count -gt 0)
-    {
-        Write-Error 'Failed to set the ACL.'
-        Write-Error $result.FailedEntries
-        return
-    }
-    else
-    {
-        Write-Host 'ACL set successfully.'
-        Write-Verbose ('Successful Directories: {0} ' -f $result.TotalDirectoriesSuccessfulCount)
-        Write-Verbose ('Successful Files: {0} ' -f $result.TotalFilesSuccessfulCount)
-    }
-    ######################
-    # default scope
-    if ($IncludeDefaultScope)
-    {
-        Write-Verbose 'include default scope'
-        $acl = Set-AzDataLakeGen2ItemAclObject -AccessControlType Mask -Permission 'rwx' -InputObject $acl -DefaultScope
-        $acl = Set-AzDataLakeGen2ItemAclObject -AccessControlType $identityType -EntityId $identityObj.ObjectId -Permission $permission -InputObject $acl -DefaultScope
-        if(-not $DoNotApplyACLRecursively)
-        {
-            $result = Update-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $acl
-        }
-        else
-        {
-            $result = Update-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $acl
-        }
-
-        if ($result.FailedEntries.Count -gt 0)
-        {
-            Write-Error 'Failed to set the ACL for the default scope.'
+        if ($result.FailedEntries.Count -gt 0) {
+            Write-Error 'Failed to set the ACL.'
             Write-Error $result.FailedEntries
             return
         }
-        else
-        {
-            Write-Host 'Default Scope ACL set successfully.'
+        else {
+            Write-Host 'ACL set successfully.'
             Write-Verbose ('Successful Directories: {0} ' -f $result.TotalDirectoriesSuccessfulCount)
             Write-Verbose ('Successful Files: {0} ' -f $result.TotalFilesSuccessfulCount)
+        }
+    }
+    ######################
+    # default scope
+    if ($IncludeDefaultScope) {
+        if ($PSCmdlet.ShouldProcess("$ContainerName\$FolderPath", "Set default scope ACL for identity '$($identityObj.DisplayName)' with $AccessControlType access")) {
+            Write-Verbose 'include default scope'
+            $acl = Set-AzDataLakeGen2ItemAclObject -AccessControlType Mask -Permission 'rwx' -InputObject $acl -DefaultScope
+            $acl = Set-AzDataLakeGen2ItemAclObject -AccessControlType $identityType -EntityId $identityObj.ObjectId -Permission $permission -InputObject $acl -DefaultScope
+            if (-not $DoNotApplyACLRecursively) {
+                $result = Update-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $acl
+            }
+            else {
+                $result = Update-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $acl
+            }
+
+            if ($result.FailedEntries.Count -gt 0) {
+                Write-Error 'Failed to set the ACL for the default scope.'
+                Write-Error $result.FailedEntries
+                return
+            }
+            else {
+                Write-Host 'Default Scope ACL set successfully.'
+                Write-Verbose ('Successful Directories: {0} ' -f $result.TotalDirectoriesSuccessfulCount)
+                Write-Verbose ('Successful Files: {0} ' -f $result.TotalFilesSuccessfulCount)
+            }
         }
     }
 
@@ -952,8 +924,7 @@ function Set-DataLakeFolderACL
     Date:   2021-08-31
     Updated: 2025-01-09 - Migrated from AzureAD to Microsoft.Graph for PowerShell 7+ compatibility
 #>
-function Get-DataLakeFolderACL
-{
+function Get-DataLakeFolderACL {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
@@ -979,38 +950,35 @@ function Get-DataLakeFolderACL
     }
 
     # Remove leading slash or backslash from the folder path
-    if ($FolderPath.Length -gt 1 -and ($FolderPath.StartsWith('/') -or $FolderPath.StartsWith('\')))
-    {
+    if ($FolderPath.Length -gt 1 -and ($FolderPath.StartsWith('/') -or $FolderPath.StartsWith('\'))) {
         $FolderPath = $FolderPath.Substring(1)
     }
 
-    try
-    {
+    try {
         $ctx = New-AzStorageContext -StorageAccountName $StorageAccountName
 
-        # Check if the folder exists
-        $folderExists = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath
+        # Verify the folder exists (will throw error if not found)
+        $null = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath
 
         # Get the ACLs for the folder
         $acls = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath | Select-Object -ExpandProperty ACL
 
         # Process each ACL
-        $aclResults = foreach ($ace in $acls)
-        {
-            if ($ace.EntityId)
-            {
+        $aclResults = foreach ($ace in $acls) {
+            if ($ace.EntityId) {
                 # Get the AD object for the entity using Microsoft Graph
                 $adObject = Get-MgDirectoryObject -DirectoryObjectId $ace.EntityId -ErrorAction SilentlyContinue
 
                 # Extract display name and object type from the directory object
                 $displayName = $null
                 $objectType = $null
-                
+
                 if ($adObject) {
                     # Try to get DisplayName from the object properties first, then from AdditionalProperties
                     if ($adObject.PSObject.Properties.Name -contains 'displayName') {
                         $displayName = $adObject.DisplayName
-                    } elseif ($adObject.AdditionalProperties.ContainsKey('displayName')) {
+                    }
+                    elseif ($adObject.AdditionalProperties.ContainsKey('displayName')) {
                         $displayName = $adObject.AdditionalProperties['displayName']
                     }
                     # Extract object type from odata.type
@@ -1033,8 +1001,7 @@ function Get-DataLakeFolderACL
         # Return the results
         return $aclResults
     }
-    catch
-    {
+    catch {
         # Write any errors to the console
         Write-Error $_.Exception.Message
     }
@@ -1079,9 +1046,8 @@ function Get-DataLakeFolderACL
     Date:   2021-08-31
     Updated: 2025-01-09 - Removed unnecessary AzureAD dependency
 #>
-function Move-DataLakeFolder
-{
-    [CmdletBinding()]
+function Move-DataLakeFolder {
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory = $true)]
         [string]$SubscriptionName, # Azure subscription name
@@ -1111,30 +1077,29 @@ function Move-DataLakeFolder
         return
     }
 
-    try
-    {
+    try {
 
         $ctx = New-AzStorageContext -StorageAccountName $StorageAccountName
 
         # Check if the folder exists
-        $folderExists = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $SourceContainerName -Path $SourceFolderPath
+        $null = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $SourceContainerName -Path $SourceFolderPath
 
         # If destination container name is not provided, use source container name
-        if (-not $DestinationContainerName)
-        {
+        if (-not $DestinationContainerName) {
             $DestinationContainerName = $SourceContainerName
         }
 
         # Move the folder
-        $ret = Move-AzDataLakeGen2Item -Context $ctx -FileSystem $SourceContainerName -Path $SourceFolderPath -DestFileSystem $DestinationContainerName -DestPath $DestinationFolderPath -Force
+        if ($PSCmdlet.ShouldProcess("$SourceContainerName\$SourceFolderPath", "Move folder to $DestinationContainerName\$DestinationFolderPath")) {
+            $ret = Move-AzDataLakeGen2Item -Context $ctx -FileSystem $SourceContainerName -Path $SourceFolderPath -DestFileSystem $DestinationContainerName -DestPath $DestinationFolderPath -Force
 
-        # Write verbose output and return the result
-        Write-Verbose ('Function: Move-DataLakeFolder')
-        Write-Verbose "Folder moved: $DestinationFolderPath"
-        return $ret
+            # Write verbose output and return the result
+            Write-Verbose ('Function: Move-DataLakeFolder')
+            Write-Verbose "Folder moved: $DestinationFolderPath"
+            return $ret
+        }
     }
-    catch
-    {
+    catch {
         # Write any errors to the console
         Write-Error $_.Exception.Message
     }
@@ -1179,9 +1144,8 @@ function Move-DataLakeFolder
     Date:   2021-08-31
     Updated: 2025-01-09 - Migrated from AzureAD to Microsoft.Graph for PowerShell 7+ compatibility
 #>
-function Remove-DataLakeFolderACL
-{
-    [CmdletBinding()]
+function Remove-DataLakeFolderACL {
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory = $true)]
         [string]$SubscriptionName, # Azure subscription name
@@ -1213,13 +1177,11 @@ function Remove-DataLakeFolderACL
     }
 
     # Remove leading slash or backslash from the folder path
-    if ($FolderPath.Length -gt 1 -and ($FolderPath.StartsWith('/') -or $FolderPath.StartsWith('\')))
-    {
+    if ($FolderPath.Length -gt 1 -and ($FolderPath.StartsWith('/') -or $FolderPath.StartsWith('\'))) {
         $FolderPath = $FolderPath.Substring(1)
     }
 
-    try
-    {
+    try {
 
         $ctx = New-AzStorageContext -StorageAccountName $StorageAccountName
 
@@ -1228,7 +1190,7 @@ function Remove-DataLakeFolderACL
         $id = $identityObj.ObjectId
 
         # Get the folder
-        $folder = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath
+        $null = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath
 
         # Get the ACLs for the folder
         $acls = Get-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath | Select-Object -ExpandProperty ACL
@@ -1237,30 +1199,27 @@ function Remove-DataLakeFolderACL
         $newacl = $acls | Where-Object { -not ($_.AccessControlType -eq $identityObj.ObjectType -and $_.EntityId -eq $id) }
 
         # Update the ACL
-        if(-not $DoNotApplyACLRecursively)
-        {
-            $result = Update-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $newacl
-        }
-        else
-        {
-            $result = Update-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $newacl
-        }
+        if ($PSCmdlet.ShouldProcess("$ContainerName\$FolderPath", "Remove ACL for identity '$($identityObj.DisplayName)'")) {
+            if (-not $DoNotApplyACLRecursively) {
+                $result = Update-AzDataLakeGen2Item -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $newacl
+            }
+            else {
+                $result = Update-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $ContainerName -Path $FolderPath -Acl $newacl
+            }
 
-        # Check if the update was successful
-        if ($result.FailedEntries.Count -gt 0)
-        {
-            Write-Error 'Failed to update the ACL.'
-            Write-Error $result.FailedEntries
-        }
-        else
-        {
-            Write-Host 'ACL updated successfully.'
-            Write-Verbose ('Successful Directories: {0} ' -f $result.TotalDirectoriesSuccessfulCount)
-            Write-Verbose ('Successful Files: {0} ' -f $result.TotalFilesSuccessfulCount)
+            # Check if the update was successful
+            if ($result.FailedEntries.Count -gt 0) {
+                Write-Error 'Failed to update the ACL.'
+                Write-Error $result.FailedEntries
+            }
+            else {
+                Write-Host 'ACL updated successfully.'
+                Write-Verbose ('Successful Directories: {0} ' -f $result.TotalDirectoriesSuccessfulCount)
+                Write-Verbose ('Successful Files: {0} ' -f $result.TotalFilesSuccessfulCount)
+            }
         }
     }
-    catch
-    {
+    catch {
         # Write any errors to the console
         Write-Error $_.Exception.Message
     }

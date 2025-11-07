@@ -147,7 +147,10 @@ Functions now provide clearer error messages when dependencies are missing, guid
 
 ## Version History:
 
-- 2025.11.2 - 01/04/2025
+- 2025.11.3 - 11/7/2025
+Code updates to support "ShouldProcess" functionality on all functions that cause changes.  Functions now support the -whatif and -confirm flags in areas that would change data.  Eliminated other build warnings identified from Invoke-ScriptAnalyzer.
+
+- 2025.11.2 - 11/04/2025
 **BREAKING CHANGE**: Migrated from deprecated AzureAD module to Microsoft.Graph PowerShell SDK for PowerShell 7+ compatibility.
   - Replaced `AzureAD` dependency with `Microsoft.Graph.Applications`, `Microsoft.Graph.Users`, `Microsoft.Graph.Groups` and `Microsoft.Graph.DirectoryObjects`
   - Updated `Get-AADObjectId` to use Microsoft Graph cmdlets (`Get-MgUser`, `Get-MgGroup`, `Get-MgServicePrincipal`)

@@ -11,13 +11,16 @@ This repository contains a PowerShell module for managing Azure Data Lake Storag
 - Install required Azure PowerShell modules:
   ```powershell
   Install-Module -Name Az.Storage -Scope CurrentUser -Force
-  Install-Module -Name AzureAD -Scope CurrentUser -Force  
-  Install-Module -Name Az.Accounts -Scope CurrentUser -Force
+  Install-Module -Name Microsoft.Graph.Applications -Scope CurrentUser -Force
+  Install-Module -Name Microsoft.Graph.Users -Scope CurrentUser -Force
+  Install-Module -Name Microsoft.Graph.Groups -Scope CurrentUser -Force
+  Install-Module -Name Microsoft.Graph.DirectoryObjects -Scope CurrentUser -Force
+
   ```
 - Authenticate to Azure before testing:
   ```powershell
   Connect-AzAccount
-  Connect-AzureAD
+  Connect-MgGraph -Scopes "User.Read.All", "Group.Read.All", "Application.Read.All"
   ```
 
 ### Code Quality and Validation
@@ -29,16 +32,16 @@ This repository contains a PowerShell module for managing Azure Data Lake Storag
   ```powershell
   Test-ModuleManifest ./AzureDataLakeManagement/AzureDataLakeManagement.psd1
   ```
-  **Note**: Will show warnings about missing Az.Storage, AzureAD, and Az.Accounts modules if they're not installed. This is expected in offline environments.
+  **Note**: Will show warnings about missing Az.Storage, Microsoft.Graph.Applications, Microsoft.Graph.Users, Microsoft.Graph.Groups, and Microsoft.Graph.DirectoryObjects modules if they're not installed. This is expected in offline environments.
 - ALWAYS run PSScriptAnalyzer before committing changes or the code quality will deteriorate.
 
 ### Offline Development and Testing
 When Azure modules or connectivity is not available:
 - Module import will work but functions will fail at runtime
 - PSScriptAnalyzer and manifest testing work completely offline
-- Function syntax and help documentation can be validated offline
-- Use these commands for offline validation:
-  ```powershell
+- Function syntax and help documentation can be validated offline 
+- Use these commands for offline validation: 
+  ```powershell 
   # These work without Azure connectivity
   Import-Module -Force './AzureDataLakeManagement/AzureDataLakeManagement.psm1'
   Get-Command -Module AzureDataLakeManagement
@@ -135,7 +138,7 @@ Test-ModuleManifest ./AzureDataLakeManagement/AzureDataLakeManagement.psd1
 1. **Authentication and Module Import Test** (1-2 minutes):
    ```powershell
    Connect-AzAccount
-   Connect-AzureAD
+   Connect-MgGraph -Scopes "User.Read.All", "Group.Read.All", "Application.Read.All"
    Import-Module -Force './AzureDataLakeManagement/AzureDataLakeManagement.psm1'
    Get-Command -Module AzureDataLakeManagement
    # Should show all 8 functions
@@ -144,10 +147,10 @@ Test-ModuleManifest ./AzureDataLakeManagement/AzureDataLakeManagement.psd1
 2. **Basic Folder Operations Test** (5-10 minutes):
    ```powershell
    # Use test subscription and storage account
-   $subName = 'your-test-subscription'
-   $rgName = 'test-resource-group'
-   $storageAccountName = 'teststorageaccount'
-   $containerName = 'test-container'
+    $subName = '<subscriptionName>'
+    $rgName = 'resourceGroup01'
+    $storageAccountName = 'storage01'
+    $containerName = 'bronze'
    
    # Create test folder structure
    Add-DataLakeFolder -SubscriptionName $subName -resourceGroup $rgName -storageAccountName $storageAccountName -containerName $containerName -folderPath 'test-dataset\sample-folder'
@@ -167,13 +170,13 @@ Test-ModuleManifest ./AzureDataLakeManagement/AzureDataLakeManagement.psd1
    Add-DataLakeFolder -SubscriptionName $subName -resourceGroup $rgName -storageAccountName $storageAccountName -containerName $containerName -folderPath 'acl-test'
    
    # Apply test ACL (use test user/group)
-   Set-DataLakeFolderACL -SubscriptionName $subName -ResourceGroupName $rgName -StorageAccountName $storageAccountName -ContainerName $containerName -folderPath 'acl-test' -Identity 'test-user@domain.com' -accessControlType Read
+   Set-DataLakeFolderACL -SubscriptionName $subName -ResourceGroupName $rgName -StorageAccountName $storageAccountName -ContainerName $containerName -folderPath 'acl-test' -Identity 'stecarr@MngEnvMCAP254199.onmicrosoft.com' -accessControlType Read
    
    # Verify ACL was applied
    Get-DataLakeFolderACL -SubscriptionName $subName -ResourceGroupName $rgName -StorageAccountName $storageAccountName -ContainerName $containerName -folderPath 'acl-test'
    
    # Test ACL removal
-   Remove-DataLakeFolderACL -SubscriptionName $subName -ResourceGroupName $rgName -StorageAccountName $storageAccountName -ContainerName $containerName -folderPath 'acl-test' -Identity 'test-user@domain.com'
+   Remove-DataLakeFolderACL -SubscriptionName $subName -ResourceGroupName $rgName -StorageAccountName $storageAccountName -ContainerName $containerName -folderPath 'acl-test' -Identity 'stecarr@MngEnvMCAP254199.onmicrosoft.com'
    
    # Clean up
    Remove-DataLakeFolder -SubscriptionName $subName -resourceGroup $rgName -storageAccountName $storageAccountName -containerName $containerName -folderPath 'acl-test'
@@ -182,13 +185,13 @@ Test-ModuleManifest ./AzureDataLakeManagement/AzureDataLakeManagement.psd1
 4. **Azure AD Object Resolution Test** (2-3 minutes):
    ```powershell
    # Test user lookup
-   Get-AADObjectId -Identity 'test-user@domain.com'
+   Get-AADObjectId -Identity 'stecarr@MngEnvMCAP254199.onmicrosoft.com'
    
    # Test group lookup  
-   Get-AADObjectId -Identity 'Test Group Name'
+   Get-AADObjectId -Identity 'allcompany'
    
    # Test service principal lookup
-   Get-AADObjectId -Identity 'Test Service Principal'
+   Get-AADObjectId -Identity 'CompliancePolicy'
    
    # Should return ObjectId, ObjectType, and DisplayName for each
    ```
@@ -224,10 +227,10 @@ The `example.ps1` file demonstrates a complete workflow:
 
 **CRITICAL**: Always modify the variables in example.ps1 before running:
 ```powershell
-$subName = 'your-test-subscription'        # Change this
-$rgName = 'your-test-resource-group'       # Change this  
-$storageAccountName = 'your-test-storage'  # Change this
-$containerName = 'test-container'          # Change this
+$subName = '<subscriptionName>'
+$rgName = 'resourceGroup01'
+$storageAccountName = 'storage01'
+$containerName = 'bronze'
 ```
 
 ## Common Development Tasks
@@ -264,10 +267,9 @@ $containerName = 'test-container'          # Change this
 
 ### Known Code Quality Issues
 PSScriptAnalyzer currently identifies 17 warnings that should be addressed in new code:
-- 5 instances of `Write-Host` usage (use `Write-Output`, `Write-Verbose`, or `Write-Information`)
+- 8 instances of `Write-Host` usage (use `Write-Output`, `Write-Verbose`, or `Write-Information`)
 - 6 unused parameter warnings (remove unused parameters)
-- 3 unused variable warnings (remove unused variables)  
-- 3 missing `ShouldProcess` support warnings for state-changing functions (Add-DataLakeFolder, Set-DataLakeFolderACL, Remove-DataLakeFolderACL)
+- 3 instances of Use Singular nouns in function names (rename functions to use singular nouns)
 
 Run `Invoke-ScriptAnalyzer` to see the complete list with line numbers and detailed guidance.
 
@@ -307,7 +309,7 @@ Test-ModuleManifest ./AzureDataLakeManagement/AzureDataLakeManagement.psd1
 ### Azure Authentication
 ```powershell
 Connect-AzAccount
-Connect-AzureAD
+Connect-MgGraph -Scopes "User.Read.All", "Group.Read.All", "Application.Read.All"
 Get-AzSubscription  # Verify connection
 ```
 
