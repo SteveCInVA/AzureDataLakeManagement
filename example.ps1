@@ -1,7 +1,8 @@
 import-module AzureDatalakeManagement
 
-Connect-AzAccount
-Connect-AzureAd
+Connect-AzAccount -UseDeviceAuthentication
+# Connect to Microsoft Graph (replaces Connect-AzureAD for PowerShell 7+ compatibility)
+Connect-MgGraph -Scopes "User.Read.All", "Group.Read.All", "Application.Read.All"
 
 $subName = '<subscriptionName>'
 $rgName = 'resourceGroup01'
@@ -35,8 +36,14 @@ set-DataLakeFolderACL -SubscriptionName $subName -ResourceGroupName $rgName -Sto
 set-DataLakeFolderACL -SubscriptionName $subName -ResourceGroupName $rgName -StorageAccountName $storageAccountName -ContainerName $containerName -folderPath 'dataset1\sampleB\test1' -Identity '<service identity>' -accessControlType Write -IncludeDefaultScope
 
 #set group acl at root of dataset
-set-DataLakeFolderACL -SubscriptionName $subName -ResourceGroupName $rgName -StorageAccountName $storageAccountName -ContainerName $containerName -folderPath 'dataset1' -Identity "<Azure AD Group>" -accessControlType Read -IncludeDefaultScope
-set-DataLakeFolderACL -SubscriptionName $subName -ResourceGroupName $rgName -StorageAccountName $storageAccountName -ContainerName $containerName -folderPath 'dataset2' -Identity "<Azure AD Group>" -accessControlType Read -IncludeDefaultScope
+set-DataLakeFolderACL -SubscriptionName $subName -ResourceGroupName $rgName -StorageAccountName $storageAccountName -ContainerName $containerName -folderPath 'dataset1' -Identity '<group1>' -accessControlType Read -IncludeDefaultScope
+set-DataLakeFolderACL -SubscriptionName $subName -ResourceGroupName $rgName -StorageAccountName $storageAccountName -ContainerName $containerName -folderPath 'dataset2' -Identity '<group2>' -accessControlType Read -IncludeDefaultScope
+
+#set acl with no recursion
+set-DataLakeFolderACL -SubscriptionName $subName -ResourceGroupName $rgName -StorageAccountName $storageAccountName -ContainerName $containerName -folderPath 'dataset1\sampleB' -Identity '<group1>' -accessControlType Write -IncludeDefaultScope -DoNotApplyACLRecursively
+
+#remove ACL from folder
+remove-DataLakeFolderACL -SubscriptionName $subName -ResourceGroupName $rgName -StorageAccountName $storageAccountName -ContainerName $containerName -folderPath 'dataset3' -Identity 'bob@contoso.com'
 
 #remove folder from specified container
 remove-DataLakeFolder -SubscriptionName $subName -resourceGroup $rgName -storageAccountName $storageAccountName -containerName $containerName -folderPath 'dataset4'

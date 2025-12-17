@@ -12,7 +12,7 @@
 RootModule = 'AzureDataLakeManagement.psm1'
 
 # Version number of this module.
-ModuleVersion = '2025.1.1'
+ModuleVersion = '2025.11.3'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Desktop', 'Core')
@@ -33,7 +33,7 @@ Copyright = '(c) 2023 Microsoft Corporation. All rights reserved.'
 Description = 'Azure Data Lake Management Module'
 
 # Minimum version of the Windows PowerShell engine required by this module
-PowerShellVersion = '5.1'
+PowerShellVersion = '7.0'
 
 # Name of the Windows PowerShell host required by this module
 # PowerShellHostName = ''
@@ -51,7 +51,7 @@ PowerShellVersion = '5.1'
 # ProcessorArchitecture = ''
 
 # Modules that must be imported into the global environment prior to importing this module
-RequiredModules = @('Az.Storage', 'AzureAD', 'Az.Accounts')
+# RequiredModules = @('Az.Storage', 'AzureAD', 'Az.Accounts')
 
 # Assemblies that must be loaded prior to importing this module
 # RequiredAssemblies = @()
@@ -72,7 +72,8 @@ RequiredModules = @('Az.Storage', 'AzureAD', 'Az.Accounts')
 FunctionsToExport = 'Get-AADObjectId', 'Get-AzureSubscriptionInfo', 'Add-DataLakeFolder',
                'Remove-DataLakeFolder', 'Set-DataLakeFolderACL',
                'Get-DataLakeFolderACL', 'Move-DataLakeFolder',
-               'Remove-DataLakeFolderACL'
+               'Remove-DataLakeFolderACL', 'Test-ModuleDependencies',
+               'Install-ModuleDependencies', 'Import-ModuleDependencies'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()
@@ -119,7 +120,7 @@ PrivateData = @{
         # RequireLicenseAcceptance = $false
 
         # External dependent modules of this module
-        # ExternalModuleDependencies = @()
+        ExternalModuleDependencies = @('Az.Storage', 'Microsoft.Graph.Applications',  'Microsoft.Graph.Users', 'Microsoft.Graph.Groups', 'Microsoft.Graph.DirectoryObjects')
 
     } # End of PSData hashtable
 
