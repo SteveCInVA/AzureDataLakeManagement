@@ -27,9 +27,10 @@
     Author: Stephen Carroll - Microsoft
     Date:   2025-01-09
 #>
-function Test-ModuleDependencies {
+function Test-ModuleDependency {
     [CmdletBinding()]
     [OutputType([System.Boolean])]
+    [Alias('Test-ModuleDependencies')]
     param(
         [switch]$AutoInstall,
         [switch]$Quiet
@@ -110,8 +111,9 @@ function Test-ModuleDependencies {
     Author: Stephen Carroll - Microsoft
     Date:   2025-01-09
 #>
-function Install-ModuleDependencies {
+function Install-ModuleDependency {
     [CmdletBinding()]
+    [Alias('Install-ModuleDependencies')]
     param(
         [string[]]$Modules = @('Az.Storage', 'Microsoft.Graph.Applications', 'Microsoft.Graph.Users', 'Microsoft.Graph.Groups', 'Microsoft.Graph.DirectoryObjects'),
         [switch]$Quiet
@@ -173,9 +175,10 @@ function Install-ModuleDependencies {
     Author: Stephen Carroll - Microsoft
     Date:   2025-01-09
 #>
-function Import-ModuleDependencies {
+function Import-ModuleDependency {
     [CmdletBinding()]
     [OutputType([System.Boolean])]
+    [Alias('Import-ModuleDependencies')]
     param(
         [string[]]$RequiredModules = @('Az.Storage', 'Microsoft.Graph.Applications', 'Microsoft.Graph.Users', 'Microsoft.Graph.Groups', 'Microsoft.Graph.DirectoryObjects'),
         [switch]$Quiet
