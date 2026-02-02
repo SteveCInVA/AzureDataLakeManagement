@@ -102,7 +102,7 @@
             Tags                       = 'Azure', 'DataLake', 'Security'
 
             # A URL to the license for this module.
-            # LicenseUri = ''
+            LicenseUri                 = 'https://raw.githubusercontent.com/SteveCInVA/AzureDataLakeManagement/refs/heads/main/LICENSE'
 
             # A URL to the main website for this project.
             ProjectUri                 = 'https://github.com/SteveCInVA/AzureDataLakeManagement'
@@ -133,5 +133,6 @@
     # DefaultCommandPrefix = ''
 
 }
+
 
 
