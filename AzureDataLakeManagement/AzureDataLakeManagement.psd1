@@ -12,7 +12,7 @@
     RootModule           = 'AzureDataLakeManagement.psm1'
 
     # Version number of this module.
-    ModuleVersion        = '2025.11.3'
+    ModuleVersion        = '2026.2.1'
 
     # Supported PSEditions
     CompatiblePSEditions = @('Desktop', 'Core')
@@ -27,7 +27,7 @@
     CompanyName          = 'Microsoft'
 
     # Copyright statement for this module
-    Copyright            = '(c) 2023 Microsoft Corporation. All rights reserved.'
+    Copyright            = '(c) 2026 Microsoft Corporation. All rights reserved.'
 
     # Description of the functionality provided by this module
     Description          = 'Azure Data Lake Management Module'
