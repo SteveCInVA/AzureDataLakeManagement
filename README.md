@@ -146,6 +146,8 @@ Functions now provide clearer error messages when dependencies are missing, guid
 ***
 
 ## Version History:
+- 2026.2.1 - 02/05/2026
+Updates to metadata and documentation formatting for PowershellGallery
 
 - 2025.11.3 - 11/7/2025
 Code updates to support "ShouldProcess" functionality on all functions that cause changes.  Functions now support the -whatif and -confirm flags in areas that would change data.  Eliminated other build warnings identified from Invoke-ScriptAnalyzer.
