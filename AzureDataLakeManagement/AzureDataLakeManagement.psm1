@@ -460,7 +460,7 @@ function Add-DataLakeFolder {
         }
         else {
             Write-Verbose $subContext.Name
-        }    
+        }
     }
 
     # Check if the Az.Storage module is available and import it
@@ -582,7 +582,7 @@ function Remove-DataLakeFolder {
         }
         else {
             Write-Verbose $subContext.Name
-        }    
+        }
     }
 
     # Get the Data Lake Storage account
@@ -743,7 +743,7 @@ function Set-DataLakeFolderACL {
         }
         else {
             Write-Verbose $subContext.Name
-        }    
+        }
     }
 
 
